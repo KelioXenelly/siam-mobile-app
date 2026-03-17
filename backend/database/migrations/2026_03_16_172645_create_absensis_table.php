@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('mahasiswa_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->decimal('latitude_mahasiswa', 10, 7);
             $table->decimal('longitude_mahasiswa', 10, 7);
-            $table->string('selfie_photo')->nullable();
+            $table->string('selfie_photo');
             $table->enum('status', ['hadir', 'terlambat', 'izin', 'sakit', 'alfa'])->default('hadir');
             $table->timestamp('waktu_absen')->useCurrent();
             $table->unique(['sesi_absensi_id','mahasiswa_id']);

@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DosenController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\MahasiswaController;
+use App\Http\Controllers\Api\MataKuliahController;
+use App\Http\Controllers\Api\PertemuanController;
 use App\Http\Controllers\Api\SesiAbsensiController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,10 +23,14 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
     Route::apiResource('dosen', DosenController::class);
     Route::apiResource('kelas', KelasController::class);
     Route::post('kelas/{id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
+    Route::apiResource('mata-kuliah', MataKuliahController::class); // belum
+    Route::apiResource('pertemuan', PertemuanController::class); // belum
+    Route::get('/kelas/{id}/pertemuan', [PertemuanController::class, 'byKelas']); //belum
 });
 
 Route::middleware(['auth:sanctum','role:dosen'])->group(function () {
     Route::post('/generate-qr', [SesiAbsensiController::class,'generateQR']);
+    Route::post('/sesi/{id}/close', [SesiAbsensiController::class, 'closeSesi']);
     Route::get('/kelas-saya', [KelasController::class,'kelasDosen']);
 });
 
