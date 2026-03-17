@@ -20,6 +20,7 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
     Route::apiResource('mahasiswa', MahasiswaController::class);
     Route::apiResource('dosen', DosenController::class);
     Route::apiResource('kelas', KelasController::class);
+    Route::post('kelas/{id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
 });
 
 Route::middleware(['auth:sanctum','role:dosen'])->group(function () {

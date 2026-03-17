@@ -20,7 +20,7 @@ class Mahasiswa extends Model
     }
 
     public function kelas() {
-        return $this->hasMany(Kelas::class, 'kelas_mahasiswa', 'mahasiswa_id', 'kelas_id');
+        return $this->belongsToMany(Kelas::class, 'kelas_mahasiswa', 'mahasiswa_id', 'kelas_id');
     }
 
     public function absensis() {
