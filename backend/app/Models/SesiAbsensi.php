@@ -13,6 +13,7 @@ class SesiAbsensi extends Model
         'qr_token',
         'latitude_dosen',
         'longitude_dosen',
+        'radius_validasi',
         'expired_at',
     ];
 

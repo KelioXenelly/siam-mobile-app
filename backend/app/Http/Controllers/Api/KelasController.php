@@ -152,4 +152,25 @@ class KelasController extends Controller
             'message' => 'Mahasiswa berhasil ditambahkan ke kelas'
         ], 200);
     }
+
+    public function kelasDosen(Request $request)
+    {
+        $dosen = $request->user()->dosen;
+
+        $kelas = Kelas::where('dosen_id', $dosen->id)
+            ->with('mataKuliah')
+            ->get();
+        
+        if($kelas->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kelas tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $kelas
+        ], 200);
+    }
 }
