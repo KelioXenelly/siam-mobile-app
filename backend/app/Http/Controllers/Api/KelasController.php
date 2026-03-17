@@ -14,7 +14,20 @@ class KelasController extends Controller
      */
     public function index()
     {
-        //
+        $kelas = Kelas::with(['mataKuliah', 'dosen', 'mahasiswas'])->get();
+
+        if($kelas->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kelas tidak ditemukan',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data kelas berhasil diambil',
+            'data' => $kelas,
+        ], 200);
     }
 
     /**
@@ -30,15 +43,43 @@ class KelasController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'mata_kuliah_id' => 'required|exists:mata_kuliahs,id',
+            'dosen_id' => 'required|exists:dosens,id',
+            'kode_kelas' => 'required|string',
+            'semester' => 'required|integer',
+            'tahun_ajaran' => 'required|string',
+            'ruangan' => 'required|string',
+        ]);
+
+        $kelas = Kelas::create([
+            'mata_kuliah_id' => $validated['mata_kuliah_id'],
+            'dosen_id' => $validated['dosen_id'],
+            'kode_kelas' => $validated['kode_kelas'],
+            'semester' => $validated['semester'],
+            'tahun_ajaran' => $validated['tahun_ajaran'],
+            'ruangan' => $validated['ruangan'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kelas berhasil dibuat',
+            'data' => $kelas->load(['mataKuliah', 'dosen', 'mahasiswas'])
+        ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Kelas $kelas)
+    public function show($id)
     {
-        //
+        $kelas = Kelas::with(['mataKuliah','dosen','mahasiswas'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kelas berhasil diambil',
+            'data' => $kelas->load(['mataKuliah','dosen','mahasiswas'])
+        ], 200);
     }
 
     /**
@@ -52,16 +93,63 @@ class KelasController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Kelas $kelas)
+    public function update(Request $request, $id)
     {
-        //
+        $kelas = Kelas::findOrFail($id);
+
+        $validated = $request->validate([
+            'mata_kuliah_id' => 'required|exists:mata_kuliahs,id',
+            'dosen_id' => 'required|exists:dosens,id',
+            'kode_kelas' => 'required|string',
+            'semester' => 'required|integer',
+            'tahun_ajaran' => 'required|string',
+            'ruangan' => 'required|string',
+        ]);
+
+        $kelas->update([
+            'mata_kuliah_id' => $validated['mata_kuliah_id'],
+            'dosen_id' => $validated['dosen_id'],
+            'kode_kelas' => $validated['kode_kelas'],
+            'semester' => $validated['semester'],
+            'tahun_ajaran' => $validated['tahun_ajaran'],
+            'ruangan' => $validated['ruangan'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kelas berhasil diupdate',
+            'data' => $kelas->load(['mataKuliah','dosen','mahasiswas'])
+        ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Kelas $kelas)
+    public function destroy($id)
     {
-        //
+        $kelas = Kelas::findOrFail($id);
+
+        $kelas->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kelas berhasil dihapus'
+        ]);
+    }
+
+    public function assignMahasiswa(Request $request, $id)
+    {
+        $kelas = Kelas::findOrFail($id);
+
+        $validated = $request->validate([
+            'mahasiswa_ids' => 'required|array'
+        ]);
+
+        $kelas->mahasiswas()->sync($validated['mahasiswa_ids']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mahasiswa berhasil ditambahkan ke kelas'
+        ], 200);
     }
 }
