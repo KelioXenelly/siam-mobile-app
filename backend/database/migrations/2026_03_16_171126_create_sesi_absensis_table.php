@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('longitude_dosen', 10, 7);
             $table->unsignedInteger('radius_validasi')->default(50);
             $table->timestamp('expired_at');
+            $table->boolean('is_closed')->default(false);
             $table->unique('pertemuan_id');
             $table->timestamps();
         });

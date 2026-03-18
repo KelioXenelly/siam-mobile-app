@@ -14,7 +14,19 @@ class MataKuliahController extends Controller
      */
     public function index()
     {
-        //
+        $mataKuliahs = MataKuliah::with('kelas')->get();
+
+        if ($mataKuliahs->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data mata kuliah tidak ditemukan',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $mataKuliahs
+        ], 200);
     }
 
     /**
@@ -30,15 +42,37 @@ class MataKuliahController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'kode_mk' => 'required|string|unique:mata_kuliahs,kode_mk',
+            'nama_mk' => 'required|string|max:255',
+            'sks' => 'required|integer|min:1|max:6',
+        ]);
+
+        $mataKuliah = MataKuliah::create([
+            'kode_mk' => $validated['kode_mk'],
+            'nama_mk' => $validated['nama_mk'],
+            'sks' => $validated['sks'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mata kuliah berhasil ditambahkan',
+            'data' => $mataKuliah
+        ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(MataKuliah $mataKuliah)
+    public function show($id)
     {
-        //
+        $mataKuliah = MataKuliah::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mata kuliah ditemukan',
+            'data' => $mataKuliah->load('kelas'),
+        ], 200);
     }
 
     /**
@@ -52,16 +86,41 @@ class MataKuliahController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MataKuliah $mataKuliah)
+    public function update(Request $request, $id)
     {
-        //
+        $mataKuliah = MataKuliah::findOrFail($id);
+
+        $validated = $request->validate([
+            'kode_mk' => 'required|string|unique:mata_kuliahs,kode_mk,' . $mataKuliah->id,
+            'nama_mk' => 'required|string|max:255',
+            'sks' => 'required|integer|min:1|max:6',
+        ]);
+
+        $mataKuliah->update([
+            'kode_mk' => $validated['kode'],
+            'nama_mk' => $validated['nama_mk'],
+            'sks' => $validated['sks'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mata kuliah berhasil diubah',
+            'data' => $mataKuliah->load('kelas'),
+        ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(MataKuliah $mataKuliah)
+    public function destroy($id)
     {
-        //
+        $mataKuliah = MataKuliah::findOrFail($id);
+
+        $mataKuliah->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mata kuliah berhasil dihapus',
+        ], 200);
     }
 }

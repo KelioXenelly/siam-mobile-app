@@ -160,4 +160,23 @@ class AbsensiController extends Controller
             'data' => $absensi
         ], 200);
     }
+
+    public function bySesi($sesi_id) {
+        $absensi = Absensi::with('mahasiswa.user')
+            ->where('sesi_absensi_id', $sesi_id)
+            ->get();
+
+        if($absensi->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada riwayat absensi',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data absensi per sesi berhasil diambil',
+            'data' => $absensi
+        ], 200);
+    }
 }
