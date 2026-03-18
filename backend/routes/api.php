@@ -22,16 +22,20 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
     Route::apiResource('mahasiswa', MahasiswaController::class);
     Route::apiResource('dosen', DosenController::class);
     Route::apiResource('kelas', KelasController::class);
-    Route::post('kelas/{id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
-    Route::apiResource('mata-kuliah', MataKuliahController::class); // belum
-    Route::apiResource('pertemuan', PertemuanController::class); // belum
-    Route::get('/kelas/{id}/pertemuan', [PertemuanController::class, 'byKelas']); //belum
+    Route::post('kelas/{kelas_id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
+    Route::apiResource('mata-kuliah', MataKuliahController::class);
+    Route::apiResource('pertemuan', PertemuanController::class);
 });
 
 Route::middleware(['auth:sanctum','role:dosen'])->group(function () {
     Route::post('/generate-qr', [SesiAbsensiController::class,'generateQR']);
-    Route::post('/sesi/{id}/close', [SesiAbsensiController::class, 'closeSesi']);
+    Route::post('/sesi/{sesi_id}/close', [SesiAbsensiController::class, 'closeSesi']);
+    Route::get('/sesi/{sesi_id}', [SesiAbsensiController::class, 'show']);
+    Route::get('/sesi/{sesi_id}/absensi', [AbsensiController::class, 'bySesi']); // belum
+    Route::get('/pertemuan/{pertemuan_id}/sesi', [SesiAbsensiController::class, 'byPertemuan']);
+    Route::get('/pertemuan/{pertemuan_id}/sesi-aktif', [SesiAbsensiController::class, 'aktif']);
     Route::get('/kelas-saya', [KelasController::class,'kelasDosen']);
+    Route::get('/kelas/{kelas_id}/pertemuan', [PertemuanController::class, 'byKelas']);
 });
 
 Route::middleware(['auth:sanctum','role:mahasiswa'])->group(function () {

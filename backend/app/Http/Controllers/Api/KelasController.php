@@ -137,9 +137,9 @@ class KelasController extends Controller
         ]);
     }
 
-    public function assignMahasiswa(Request $request, $id)
+    public function assignMahasiswa(Request $request, $kelas_id)
     {
-        $kelas = Kelas::findOrFail($id);
+        $kelas = Kelas::findOrFail($kelas_id);
 
         $validated = $request->validate([
             'mahasiswa_ids' => 'required|array'
