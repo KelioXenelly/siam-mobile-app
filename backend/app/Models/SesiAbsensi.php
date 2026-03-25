@@ -15,6 +15,7 @@ class SesiAbsensi extends Model
         'longitude_dosen',
         'radius_validasi',
         'expired_at',
+        'is_closed'
     ];
 
     public function pertemuan() {
