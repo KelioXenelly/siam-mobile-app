@@ -31,7 +31,7 @@ Route::middleware(['auth:sanctum','role:dosen'])->group(function () {
     Route::post('/generate-qr', [SesiAbsensiController::class,'generateQR']);
     Route::post('/sesi/{sesi_id}/close', [SesiAbsensiController::class, 'closeSesi']);
     Route::get('/sesi/{sesi_id}', [SesiAbsensiController::class, 'show']);
-    Route::get('/sesi/{sesi_id}/absensi', [AbsensiController::class, 'bySesi']); // belum
+    Route::get('/sesi/{sesi_id}/absensi', [AbsensiController::class, 'bySesi']);
     Route::get('/pertemuan/{pertemuan_id}/sesi', [SesiAbsensiController::class, 'byPertemuan']);
     Route::get('/pertemuan/{pertemuan_id}/sesi-aktif', [SesiAbsensiController::class, 'aktif']);
     Route::get('/kelas-saya', [KelasController::class,'kelasDosen']);
