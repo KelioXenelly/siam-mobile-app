@@ -21,7 +21,8 @@ class MahasiswaSeeder extends Seeder
             [
                 'name' => 'Kelio Xenelly',
                 'password' => Hash::make('password'),
-                'role' => 'mahasiswa'
+                'role' => 'mahasiswa',
+                'is_active' => true,
             ]
         );
 

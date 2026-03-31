@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum','role:admin'])->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
     Route::apiResource('mahasiswa', MahasiswaController::class);
     Route::apiResource('dosen', DosenController::class);
     Route::apiResource('kelas', KelasController::class);

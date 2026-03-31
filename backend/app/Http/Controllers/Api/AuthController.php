@@ -31,7 +31,13 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = $user->createToken('siamas_token')->plainTextToken;
+        if (!$user->is_active) {
+            return response()->json([
+                'message' => 'Akun tidak aktif'
+            ], 401);
+        }
+
+        $token = $user->createToken('siam_token')->plainTextToken;
 
         return response()->json([
             'token' => $token,
@@ -73,5 +79,28 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Password berhasil diubah'
         ]);
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'role' => 'required|in:admin,dosen,mahasiswa',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'User berhasil didaftarkan',
+            'user' => $user
+        ], 201);
     }
 }
