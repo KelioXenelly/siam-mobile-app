@@ -20,7 +20,7 @@ class AdminSeeder extends Seeder
         
         // 2. Data Tambahan (Hanya diisi jika data belum ada)
         [
-            'name'     => 'Admin SIAMAS',
+            'name'     => 'Admin SIAM',
             'password' => Hash::make('admin123'),
             'role'     => 'admin'
         ]
