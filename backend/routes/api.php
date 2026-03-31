@@ -19,8 +19,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum','role:admin'])->group(function () {
-    Route::apiResource('mahasiswa', MahasiswaController::class);
-    Route::apiResource('dosen', DosenController::class);
+    Route::post('/register', [AuthController::class, 'register']);
+
+    Route::get('/users', [AuthController::class, 'users']);
+    Route::put('/users/{user_id}', [AuthController::class, 'updateUser']);
+    Route::delete('/users/{user_id}', [AuthController::class, 'deleteUser']);
+
     Route::apiResource('kelas', KelasController::class);
     Route::post('kelas/{kelas_id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
     Route::apiResource('mata-kuliah', MataKuliahController::class);

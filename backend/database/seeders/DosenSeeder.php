@@ -21,7 +21,8 @@ class DosenSeeder extends Seeder
             [
                 'name' => 'Dr. Eric',
                 'password' => Hash::make('password'),
-                'role' => 'dosen'
+                'role' => 'dosen',
+                'is_active' => true,
             ]
         );
 
