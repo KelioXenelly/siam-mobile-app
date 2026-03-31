@@ -40,10 +40,14 @@ export default function LoginPage() {
       });
 
       const token = res.data.token;
+      const user = res.data.user;
 
       setToken(token);
 
-      navigate("/"); // redirect to dashboard
+      if(user.role == "admin") {
+        navigate('/admin/dashboard');
+      }
+
     } catch (err: any) {
       setError(err.response?.data?.message || "Login Gagal");
     } finally {
@@ -63,10 +67,10 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 flex overflow-hidden relative z-10 min-h-[500px]"
+        className="w-full max-w-4xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 flex overflow-hidden relative z-10 min-h-125"
       >
         {/* Left Side - Branding */}
-        <div className="hidden lg:flex w-5/12 bg-gradient-to-br from-blue-600 to-indigo-700 p-12 flex-col justify-between relative overflow-hidden">
+        <div className="hidden lg:flex w-5/12 bg-linear-to-br from-blue-600 to-indigo-700 p-12 flex-col justify-between relative overflow-hidden">
           {/* Decorative circles */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />

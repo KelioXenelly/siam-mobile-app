@@ -11,18 +11,20 @@ import {
 import { motion } from 'motion/react';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { logout } from '~/lib/auth';
+import { useAuth } from '~/context/auth_context';
 
 export default function Sidebar() {
+  const {user} = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Mahasiswa', path: '/admin/mahasiswa', icon: Users },
-    { name: 'Dosen', path: '/admin/dosen', icon: GraduationCap },
-    { name: 'Mata Kuliah', path: '/admin/matakuliah', icon: BookOpen },
-    { name: 'Kelas', path: '/admin/kelas', icon: Building2 },
-    { name: 'Pertemuan', path: '/admin/pertemuan', icon: Calendar },
+    { name: 'Dashboard', path: `/${user?.role}/dashboard`, icon: LayoutDashboard },
+    { name: 'Mahasiswa', path: `/${user?.role}/mahasiswa`, icon: Users },
+    { name: 'Dosen', path: `/${user?.role}/dosen`, icon: GraduationCap },
+    { name: 'Mata Kuliah', path: `/${user?.role}/matakuliah`, icon: BookOpen },
+    { name: 'Kelas', path: `/${user?.role}/kelas`, icon: Building2 },
+    { name: 'Pertemuan', path: `/${user?.role}/pertemuan`, icon: Calendar },
   ];
 
   const handleLogout = () => {

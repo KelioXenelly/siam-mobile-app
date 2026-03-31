@@ -1,9 +1,11 @@
 import { Search, Bell, ChevronDown } from "lucide-react";
 import { useLocation } from "react-router";
+import { useAuth } from "~/context/auth_context";
 
 export default function Navbar() {
+  const { user } = useAuth();
   const location = useLocation();
-  
+
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === "/") return "Dashboard";
@@ -42,9 +44,13 @@ export default function Navbar() {
           </div>
           <div className="text-left hidden md:block">
             <p className="text-sm font-medium text-slate-700 leading-tight">
-              Admin System
+              {user ? user.name : "Loading..."}
             </p>
-            <p className="text-xs text-slate-500">Superadmin</p>
+            <p className="text-xs text-slate-500">
+              {user
+                ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+                : "Loading..."}
+            </p>
           </div>
           <ChevronDown className="w-4 h-4 text-slate-400" />
         </button>
