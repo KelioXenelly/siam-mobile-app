@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { AuthProvider } from "./context/auth_context";
+import { Toaster } from "sonner";
 
 export const meta: Route.MetaFunction = () => [
   { title: "SIAM App" },
@@ -50,6 +51,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-center" richColors />
       <Outlet />
     </AuthProvider>
 );

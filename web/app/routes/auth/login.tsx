@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import api from "~/lib/api";
 import { setToken } from "~/lib/auth";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -42,14 +43,26 @@ export default function LoginPage() {
       const token = res.data.token;
       const user = res.data.user;
 
-      setToken(token);
+      if(!token || !user) {
+        toast.error(res.data.message || "Login Gagal");
+        setError(res.data.message || "Login Gagal");
+        return;
+      }
 
       if(user.role == "admin") {
+        setToken(token);
+        toast.success(res.data.message || "Login berhasil");
         navigate('/admin/dashboard');
       }
 
     } catch (err: any) {
-      setError(err.response?.data?.message || "Login Gagal");
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Login Gagal";
+
+      toast.error(message);
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -21,7 +21,7 @@ export default function Sidebar() {
   const menuItems = [
     { name: 'Dashboard', path: `/${user?.role}/dashboard`, icon: LayoutDashboard },
     { name: 'Users', path: `/${user?.role}/users`, icon: Users },
-    { name: 'Mata Kuliah', path: `/${user?.role}/matakuliah`, icon: BookOpen },
+    { name: 'Mata Kuliah', path: `/${user?.role}/mata-kuliah`, icon: BookOpen },
     { name: 'Kelas', path: `/${user?.role}/kelas`, icon: Building2 },
     { name: 'Pertemuan', path: `/${user?.role}/pertemuan`, icon: Calendar },
   ];
