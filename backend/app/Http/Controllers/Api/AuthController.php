@@ -40,6 +40,7 @@ class AuthController extends Controller
         $token = $user->createToken('siam_token')->plainTextToken;
 
         return response()->json([
+            'message' => "Login berhasil! Selamat datang " . $user->name . " 👋",
             'token' => $token,
             'user' => $user
         ]);
@@ -116,7 +117,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'User berhasil didaftarkan',
+            'message' => 'Pengguna berhasil didaftarkan',
             'data' => $user->load('mahasiswa', 'dosen'),
         ], 201);
     }
@@ -182,7 +183,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'User berhasil diperbarui',
+            'message' => 'Pengguna berhasil diperbarui',
             'data' => $user->load('mahasiswa', 'dosen'),
         ], 200);
     }
@@ -200,7 +201,7 @@ class AuthController extends Controller
         $user->delete();
 
         return response()->json([
-            'message' => 'User berhasil dihapus',
+            'message' => 'Pengguna berhasil dihapus',
         ], 200);
     }
 }

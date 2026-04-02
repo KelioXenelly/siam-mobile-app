@@ -16,6 +16,7 @@ import {
 import api from "~/lib/api";
 import type { User } from "~/types/user";
 import type { Role } from "~/types/role";
+import { toast } from "sonner";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,9 +25,9 @@ export default function UsersPage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">(
-    "create",
-  );
+  const [modalMode, setModalMode] = useState<
+    "create" | "edit" | "view" | "delete"
+  >("create");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Form states
@@ -47,13 +48,16 @@ export default function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
-  const handleOpenModal = (mode: "create" | "edit" | "view", user?: User) => {
+  const handleOpenModal = (
+    mode: "create" | "edit" | "view" | "delete",
+    user?: User,
+  ) => {
     setModalMode(mode);
     console.log("Opening modal in mode:", mode, "with user:", user);
     if (user) {
       setSelectedUser(user);
-      setFormData({ 
-        ...user, 
+      setFormData({
+        ...user,
         nim_nidn: user.mahasiswa?.nim || user.dosen?.nidn || "",
         prodi: user.mahasiswa?.prodi || "",
         angkatan: user.mahasiswa?.angkatan || "",
@@ -91,8 +95,10 @@ export default function UsersPage() {
         const res = await api.post("/register", newUser);
         const createdUser = res.data.data;
         setUsers([...users, createdUser]);
+        toast.success(res.data.message || "Pengguna baru berhasil dibuat!");
       } catch (error) {
         console.error("Gagal Membuat Pengguna Baru:", error);
+        toast.error("Gagal membuat pengguna baru.");
       }
     } else if (modalMode === "edit" && selectedUser) {
       const updatedUser = {
@@ -102,9 +108,18 @@ export default function UsersPage() {
         role: formData.role || selectedUser.role,
         nim: role === "mahasiswa" ? inputNimNidn : null,
         nidn: role === "dosen" ? inputNimNidn : null,
-        prodi: role === "mahasiswa" ? formData.prodi || selectedUser.mahasiswa?.prodi || null : null,
-        angkatan: role === "mahasiswa" ? formData.angkatan || selectedUser.mahasiswa?.angkatan || null : null,
-        is_active: formData.is_active !== undefined ? formData.is_active : selectedUser.is_active,
+        prodi:
+          role === "mahasiswa"
+            ? formData.prodi || selectedUser.mahasiswa?.prodi || null
+            : null,
+        angkatan:
+          role === "mahasiswa"
+            ? formData.angkatan || selectedUser.mahasiswa?.angkatan || null
+            : null,
+        is_active:
+          formData.is_active !== undefined
+            ? formData.is_active
+            : selectedUser.is_active,
         password: formData.password || undefined, // Hanya kirim password jika diisi
       };
 
@@ -112,23 +127,30 @@ export default function UsersPage() {
         const res = await api.put(`/users/${selectedUser.id}`, updatedUser);
         const updatedUserFromServer = res.data.data;
         setUsers(
-          users.map((u) => (u.id === selectedUser.id ? updatedUserFromServer : u)),
+          users.map((u) =>
+            u.id === selectedUser.id ? updatedUserFromServer : u,
+          ),
         );
+        toast.success(res.data.message || "Pengguna berhasil diperbarui!");
       } catch (error) {
         console.error("Gagal Memperbarui Pengguna:", error);
+        toast.error("Gagal memperbarui pengguna.");
       }
     }
     handleCloseModal();
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      try {
-        await api.delete(`/users/${id}`);
-        setUsers(users.filter((user) => user.id !== id));
-      } catch (error) {
-        console.error("Gagal menghapus pengguna:", error);
-      }
+    if (!selectedUser) return;
+
+    try {
+      const res = await api.delete(`/users/${id}`);
+      setUsers(users.filter((user) => user.id !== id));
+      toast.success(res.data.message || "Pengguna berhasil dihapus!");
+      handleCloseModal();
+    } catch (error) {
+      console.error("Gagal menghapus pengguna:", error);
+      toast.error("Gagal menghapus pengguna.");
     }
   };
 
@@ -309,7 +331,7 @@ export default function UsersPage() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(user.id)}
+                          onClick={() => handleOpenModal("delete", user)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Hapus"
                         >
@@ -327,7 +349,7 @@ export default function UsersPage() {
 
       {/* Modal CRUD */}
       <AnimatePresence>
-        {isModalOpen && (
+        {isModalOpen && modalMode !== "delete" && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
             <motion.div
               initial={{ opacity: 0 }}
@@ -407,7 +429,9 @@ export default function UsersPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, nim_nidn: e.target.value })
                       }
-                      disabled={modalMode === "view" || formData.role === "admin"}
+                      disabled={
+                        modalMode === "view" || formData.role === "admin"
+                      }
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
                       placeholder={
                         formData.role === "mahasiswa"
@@ -435,9 +459,8 @@ export default function UsersPage() {
                     />
                   </div>
 
-                  {
-                    formData.role === "mahasiswa" && (
-                      <>
+                  {formData.role === "mahasiswa" && (
+                    <>
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-700">
                           Prodi
@@ -462,16 +485,18 @@ export default function UsersPage() {
                           type="text"
                           value={formData.angkatan || ""}
                           onChange={(e) =>
-                            setFormData({ ...formData, angkatan: e.target.value })
+                            setFormData({
+                              ...formData,
+                              angkatan: e.target.value,
+                            })
                           }
                           disabled={modalMode === "view"}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
                           placeholder="Angkatan..."
                         />
                       </div>
-                      </>
-                    )
-                  }
+                    </>
+                  )}
 
                   {modalMode !== "create" && (
                     <>
@@ -496,7 +521,10 @@ export default function UsersPage() {
                           <option value="false">Nonaktif</option>
                         </select>
                       </div>
-                      <div className="space-y-1.5">
+                      <div
+                        className="space-y-1.5"
+                        hidden={modalMode === "view"}
+                      >
                         <label className="text-sm font-medium text-slate-700">
                           Password
                         </label>
@@ -504,14 +532,15 @@ export default function UsersPage() {
                           type="password"
                           value={formData.password || ""}
                           onChange={(e) =>
-                            setFormData({ ...formData, password: e.target.value })
+                            setFormData({
+                              ...formData,
+                              password: e.target.value,
+                            })
                           }
                           disabled={modalMode === "view"}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
                           placeholder={
-                            modalMode === "edit"
-                              ? "Password baru"
-                              : "Masukkan password..."
+                            modalMode === "edit" ? "Password baru" : "-"
                           }
                         />
                       </div>
@@ -536,6 +565,87 @@ export default function UsersPage() {
                     <span>Simpan Data</span>
                   </button>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isModalOpen && modalMode === "delete" && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* BACKDROP */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseModal}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+
+            {/* MODAL */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100"
+            >
+              {/* HEADER */}
+              <div className="px-6 py-5 text-center">
+                <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center rounded-full bg-red-100">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Hapus Pengguna
+                </h3>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  Apakah kamu yakin ingin menghapus pengguna ini?
+                </p>
+              </div>
+
+              {/* CONTENT */}
+              <div className="px-6 pb-4 text-sm text-slate-600 space-y-1">
+                <p>
+                  <span className="font-medium text-slate-800">Nama:</span>{" "}
+                  {formData.name}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-800">Email:</span>{" "}
+                  {formData.email}
+                </p>
+                <p>
+                  {formData.role === "mahasiswa" ? (
+                    <>
+                      <span className="font-medium text-slate-800">NIM:</span>{" "}
+                      {formData.nim_nidn}
+                    </>
+                  ) : formData.role === "dosen" ? (
+                    <>
+                      <span className="font-medium text-slate-800">NIDN:</span>{" "}
+                      {formData.nim_nidn}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+
+              {/* ACTION */}
+              <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+                <button
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Batal
+                </button>
+
+                <button
+                  onClick={() => handleDelete(selectedUser!.id)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-sm"
+                >
+                  Hapus
+                </button>
               </div>
             </motion.div>
           </div>

@@ -1,27 +1,38 @@
-import { Search, Bell, ChevronDown } from "lucide-react";
-import { useLocation } from "react-router";
+import { Search, Bell, ChevronDown, LogOut } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { useAuth } from "~/context/auth_context";
+import { logout } from "~/lib/auth";
 
 export default function Navbar() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path === "/") return "Dashboard";
-    if (path === "/mahasiswa") return "Manajemen Mahasiswa";
-    if (path === "/dosen") return "Manajemen Dosen";
-    if (path === "/matakuliah") return "Mata Kuliah";
-    if (path === "/kelas") return "Kelas";
-    if (path === "/pertemuan") return "Pertemuan";
+    if (path === "/admin/dashboard") return "Dashboard";
+    if (path === "/admin/users") return "Manajemen Pengguna";
+    if (path === "/admin/mata-kuliah") return "Manajemen Mata Kuliah";
+    if (path === "/admin/kelas") return "Manajemen Kelas";
+    if (path === "/admin/pertemuan") return "Manajemen Pertemuan";
     return "Admin Panel";
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+    toast.success("Logout berhasil, sampai jumpa lagi! 👋")
   };
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-10">
       <h1 className="text-xl font-semibold text-slate-800">{getPageTitle()}</h1>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 relative">
         <div className="relative hidden md:block">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -38,7 +49,10 @@ export default function Navbar() {
 
         <div className="h-8 w-px bg-slate-200"></div>
 
-        <button className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <button
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          onClick={() => setIsProfileOpen(!isProfileOpen)}
+        >
           <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200">
             <span className="text-indigo-600 font-bold text-sm">A</span>
           </div>
@@ -52,8 +66,38 @@ export default function Navbar() {
                 : "Loading..."}
             </p>
           </div>
-          <ChevronDown className="w-4 h-4 text-slate-400" />
+          <ChevronDown
+            className={`w-4 h-4 text-slate-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
+          />
         </button>
+
+        <AnimatePresence>
+          {isProfileOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsProfileOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 z-50 overflow-hidden"
+              >
+                <div className="p-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );
