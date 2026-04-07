@@ -14,7 +14,7 @@ class KelasController extends Controller
      */
     public function index()
     {
-        $kelas = Kelas::with(['mataKuliah', 'dosen', 'mahasiswas'])->get();
+        $kelas = Kelas::with(['mataKuliah', 'dosen', 'mahasiswas', 'ruangan'])->get();
 
         if($kelas->isEmpty()) {
             return response()->json([
@@ -44,27 +44,35 @@ class KelasController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'mata_kuliah_id' => 'required|exists:mata_kuliahs,id',
-            'dosen_id' => 'required|exists:dosens,id',
-            'kode_kelas' => 'required|string',
-            'semester' => 'required|integer',
-            'tahun_ajaran' => 'required|string',
-            'ruangan' => 'required|string',
+            'kode_kelas' => 'required|string|unique:kelas,kode_kelas',
+            'mata_kuliah_id' => 'required|integer|exists:mata_kuliahs,id',
+            'dosen_id' => 'required|integer|exists:dosens,id',
+            'ruangan_id' => 'required|integer|exists:ruangans,id',
+            'semester' => 'required|integer|min:1|max:8',
+            'tahun_ajaran' => 'required|string|max:255',
+            'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'jam_mulai' => 'required|time',
+            'jam_selesai' => 'required|time',
+            'kapasitas' => 'required|integer|min:1',
         ]);
 
         $kelas = Kelas::create([
+            'kode_kelas' => $validated['kode_kelas'],
             'mata_kuliah_id' => $validated['mata_kuliah_id'],
             'dosen_id' => $validated['dosen_id'],
-            'kode_kelas' => $validated['kode_kelas'],
+            'ruangan_id' => $validated['ruangan_id'],
             'semester' => $validated['semester'],
             'tahun_ajaran' => $validated['tahun_ajaran'],
-            'ruangan' => $validated['ruangan'],
+            'hari' => $validated['hari'],
+            'jam_mulai' => $validated['jam_mulai'],
+            'jam_selesai' => $validated['jam_selesai'],
+            'kapasitas' => $validated['kapasitas'],
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Kelas berhasil dibuat',
-            'data' => $kelas->load(['mataKuliah', 'dosen', 'mahasiswas'])
+            'message' => 'Kelas berhasil ditambahkan',
+            'data' => $kelas->load(['mataKuliah', 'dosen', 'mahasiswas', 'ruangan'])
         ], 201);
     }
 
@@ -73,12 +81,12 @@ class KelasController extends Controller
      */
     public function show($id)
     {
-        $kelas = Kelas::with(['mataKuliah','dosen','mahasiswas'])->findOrFail($id);
+        $kelas = Kelas::with(['mataKuliah','dosen','mahasiswas', 'ruangan'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
             'message' => 'Kelas berhasil diambil',
-            'data' => $kelas->load(['mataKuliah','dosen','mahasiswas'])
+            'data' => $kelas->load(['mataKuliah','dosen','mahasiswas', 'ruangan'])
         ], 200);
     }
 
@@ -98,27 +106,35 @@ class KelasController extends Controller
         $kelas = Kelas::findOrFail($id);
 
         $validated = $request->validate([
-            'mata_kuliah_id' => 'required|exists:mata_kuliahs,id',
-            'dosen_id' => 'required|exists:dosens,id',
-            'kode_kelas' => 'required|string',
-            'semester' => 'required|integer',
-            'tahun_ajaran' => 'required|string',
-            'ruangan' => 'required|string',
+            'kode_kelas' => 'required|string|unique:kelas,kode_kelas',
+            'mata_kuliah_id' => 'required|integer|exists:mata_kuliahs,id',
+            'dosen_id' => 'required|integer|exists:dosens,id',
+            'ruangan_id' => 'required|integer|exists:ruangans,id',
+            'semester' => 'required|integer|min:1|max:8',
+            'tahun_ajaran' => 'required|string|max:255',
+            'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'jam_mulai' => 'required|time',
+            'jam_selesai' => 'required|time',
+            'kapasitas' => 'required|integer|min:1',
         ]);
 
         $kelas->update([
+            'kode_kelas' => $validated['kode_kelas'],
             'mata_kuliah_id' => $validated['mata_kuliah_id'],
             'dosen_id' => $validated['dosen_id'],
-            'kode_kelas' => $validated['kode_kelas'],
+            'ruangan_id' => $validated['ruangan_id'],
             'semester' => $validated['semester'],
             'tahun_ajaran' => $validated['tahun_ajaran'],
-            'ruangan' => $validated['ruangan'],
+            'hari' => $validated['hari'],
+            'jam_mulai' => $validated['jam_mulai'],
+            'jam_selesai' => $validated['jam_selesai'],
+            'kapasitas' => $validated['kapasitas'],
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Kelas berhasil diupdate',
-            'data' => $kelas->load(['mataKuliah','dosen','mahasiswas'])
+            'data' => $kelas->load(['mataKuliah','dosen','mahasiswas', 'ruangan'])
         ], 200);
     }
 

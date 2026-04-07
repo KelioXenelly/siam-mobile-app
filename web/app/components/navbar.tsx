@@ -15,6 +15,8 @@ export default function Navbar() {
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === "/admin/dashboard") return "Dashboard";
+    if (path === "/admin/program-studi") return "Manajemen Program Studi";
+    if (path === "/admin/ruangan") return "Manajemen Ruangan";
     if (path === "/admin/users") return "Manajemen Pengguna";
     if (path === "/admin/mata-kuliah") return "Manajemen Mata Kuliah";
     if (path === "/admin/kelas") return "Manajemen Kelas";

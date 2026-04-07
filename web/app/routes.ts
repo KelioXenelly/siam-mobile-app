@@ -5,8 +5,11 @@ export default [
   
   route("admin", "layouts/admin_layout.tsx", [
     route("dashboard", "routes/admin/dashboard.tsx"),
+    route("program-studi", "routes/admin/program_studi.tsx"),
+    route("ruangan", "routes/admin/ruangan.tsx"),
     route("users", "routes/admin/users.tsx"),
+    route("mata-kuliah", "routes/admin/mata_kuliah.tsx"),
     route("kelas", "routes/admin/kelas.tsx"),
-    route("mata_kuliah", "routes/admin/mata_kuliah.tsx"),
+    route("pertemuan", "routes/admin/pertemuan.tsx"),
   ])
 ] satisfies RouteConfig;

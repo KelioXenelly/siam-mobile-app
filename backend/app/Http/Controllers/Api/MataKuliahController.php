@@ -25,6 +25,7 @@ class MataKuliahController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => 'Data mata kuliah berhasil diambil',
             'data' => $mataKuliahs
         ], 200);
     }
@@ -97,7 +98,7 @@ class MataKuliahController extends Controller
         ]);
 
         $mataKuliah->update([
-            'kode_mk' => $validated['kode'],
+            'kode_mk' => $validated['kode_mk'],
             'nama_mk' => $validated['nama_mk'],
             'sks' => $validated['sks'],
         ]);
@@ -115,6 +116,13 @@ class MataKuliahController extends Controller
     public function destroy($id)
     {
         $mataKuliah = MataKuliah::findOrFail($id);
+
+        if($mataKuliah->kelas()->exists()) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Mata kuliah masih memiliki kelas, sehingga tidak bisa dihapus',
+            ], 400);
+        }
 
         $mataKuliah->delete();
 
