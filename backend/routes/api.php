@@ -41,6 +41,9 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
     Route::post('/kelas/{kelas_id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
     
     Route::apiResource('/pertemuan', PertemuanController::class);
+    Route::post('/pertemuan/{pertemuan_id}/start', [PertemuanController::class, 'start']);
+    Route::post('/pertemuan/{pertemuan_id}/end', [PertemuanController::class, 'end']);
+    
 });
 
 Route::middleware(['auth:sanctum','role:dosen'])->group(function () {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 
 use App\Models\Kelas;
+use App\Models\Pertemuan;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class KelasController extends Controller
@@ -19,7 +21,7 @@ class KelasController extends Controller
             'dosen.user', 
             'mahasiswas.user', 
             'ruangan'
-        ])->get();
+        ])->orderBy('kode_kelas', 'asc')->get();
 
         if($kelas->isEmpty()) {
             return response()->json([
@@ -73,6 +75,51 @@ class KelasController extends Controller
             'jam_selesai' => $validated['jam_selesai'],
             'kapasitas' => $validated['kapasitas'],
         ]);
+
+        // 🔥 MAP HARI → CARBON
+        $hariMap = [
+            'Senin' => Carbon::MONDAY,
+            'Selasa' => Carbon::TUESDAY,
+            'Rabu' => Carbon::WEDNESDAY,
+            'Kamis' => Carbon::THURSDAY,
+            'Jumat' => Carbon::FRIDAY,
+            'Sabtu' => Carbon::SATURDAY,
+            'Minggu' => Carbon::SUNDAY,
+        ];
+
+        $targetDay = $hariMap[$kelas->hari] ?? Carbon::MONDAY;
+
+        $startDate = Carbon::now()->startOfWeek();
+
+        while ($startDate->dayOfWeek !== $targetDay) {
+            $startDate->addDay();
+        }
+
+        // 🔥 PREPARE ARRAY
+        $pertemuanData = [];
+
+        for ($i = 1; $i <= 16; $i++) {
+
+            $tanggal = $startDate->copy()->addWeeks($i - 1);
+
+            $topik = match ($i) {
+                8 => 'UTS',
+                16 => 'UAS',
+                default => 'Pertemuan ' . $i,
+            };
+
+            $pertemuanData[] = [
+                'pertemuan_ke' => $i,
+                'tanggal' => $tanggal->format('Y-m-d'),
+                'topik' => $topik,
+                'status' => 'Terjadwal',
+                'started_at' => null,
+                'ended_at' => null,
+            ];
+        }
+
+        // 🔥 INSERT SEKALI
+        $kelas->pertemuans()->createMany($pertemuanData);
 
         return response()->json([
             'success' => true,

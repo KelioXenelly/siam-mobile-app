@@ -12,6 +12,10 @@ class Pertemuan extends Model
         'kelas_id',
         'pertemuan_ke',
         'tanggal',
+        'topik',
+        'status',
+        'started_at',
+        'ended_at',
     ];
 
     public function kelas() {

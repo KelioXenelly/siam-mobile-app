@@ -11,6 +11,9 @@ import {
   Building2,
   Users,
   UserPlus,
+  Calendar,
+  Clock,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTable } from "../../hooks/useTable";
@@ -164,8 +167,6 @@ export default function KelasPage() {
         kapasitas: formData.kapasitas,
       };
 
-      console.log(formData.jam_mulai);
-
       try {
         await api.put(`/kelas/${selectedKelas.id}`, updatedKelas);
         await fetchKelas();
@@ -207,7 +208,7 @@ export default function KelasPage() {
   };
 
   const handleAssignMahasiswa = async () => {
-    if(!selectedKelas) return;
+    if (!selectedKelas) return;
 
     try {
       await api.post(`/kelas/${selectedKelas.id}/assign-mahasiswa`, {
@@ -218,13 +219,13 @@ export default function KelasPage() {
       setIsAssignModalOpen(false);
     } catch (error: any) {
       const errors = error.response?.data?.errors;
-      if(errors) {
+      if (errors) {
         toast.error(errors[0]);
       } else {
         toast.error("Gagal menambahkan mahasiswa ke kelas.");
       }
     }
-  }
+  };
 
   const toggleStudent = (mId: number) => {
     setAssignedStudents((prev) =>
@@ -431,13 +432,21 @@ export default function KelasPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col text-sm text-slate-700">
-                        <span className="font-medium">
-                          {k.hari}, {k.jam_mulai} - {k.jam_selesai}
-                        </span>
-                        <span className="text-slate-500">
-                          {k.ruangan?.nama}
-                        </span>
+                      <div className="flex flex-col gap-1 text-sm text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Hari {k.hari}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>
+                            {k.jam_mulai.slice(0, 5)} - {k.jam_selesai.slice(0, 5)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Ruang {k.ruangan?.nama}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -917,15 +926,11 @@ export default function KelasPage() {
                   {formData.mata_kuliah?.nama_mk}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-800">
-                    Dosen:
-                  </span>{" "}
+                  <span className="font-medium text-slate-800">Dosen:</span>{" "}
                   {formData.dosen?.user.name}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-800">
-                    Ruangan:
-                  </span>{" "}
+                  <span className="font-medium text-slate-800">Ruangan:</span>{" "}
                   {formData.ruangan?.nama}
                 </p>
                 <p>
