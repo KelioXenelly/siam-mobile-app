@@ -14,7 +14,12 @@ class KelasController extends Controller
      */
     public function index()
     {
-        $kelas = Kelas::with(['mataKuliah', 'dosen', 'mahasiswas', 'ruangan'])->get();
+        $kelas = Kelas::with([
+            'mataKuliah', 
+            'dosen.user', 
+            'mahasiswas.user', 
+            'ruangan'
+        ])->get();
 
         if($kelas->isEmpty()) {
             return response()->json([
@@ -51,8 +56,8 @@ class KelasController extends Controller
             'semester' => 'required|integer|min:1|max:8',
             'tahun_ajaran' => 'required|string|max:255',
             'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
-            'jam_mulai' => 'required|time',
-            'jam_selesai' => 'required|time',
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
             'kapasitas' => 'required|integer|min:1',
         ]);
 
@@ -106,15 +111,15 @@ class KelasController extends Controller
         $kelas = Kelas::findOrFail($id);
 
         $validated = $request->validate([
-            'kode_kelas' => 'required|string|unique:kelas,kode_kelas',
+            'kode_kelas' => 'required|string|unique:kelas,kode_kelas,' . $kelas->id,
             'mata_kuliah_id' => 'required|integer|exists:mata_kuliahs,id',
             'dosen_id' => 'required|integer|exists:dosens,id',
             'ruangan_id' => 'required|integer|exists:ruangans,id',
             'semester' => 'required|integer|min:1|max:8',
             'tahun_ajaran' => 'required|string|max:255',
             'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
-            'jam_mulai' => 'required|time',
-            'jam_selesai' => 'required|time',
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
             'kapasitas' => 'required|integer|min:1',
         ]);
 
@@ -145,6 +150,20 @@ class KelasController extends Controller
     {
         $kelas = Kelas::findOrFail($id);
 
+        if($kelas->pertemuans()->exists()) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Kelas masih memiliki pertemuan, tidak bisa dihapus',
+            ], 409);
+        }
+
+        if($kelas->mahasiswas()->exists()) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Kelas masih memiliki mahasiswa, tidak bisa dihapus',
+            ], 409);
+        }
+
         $kelas->delete();
 
         return response()->json([
@@ -158,7 +177,8 @@ class KelasController extends Controller
         $kelas = Kelas::findOrFail($kelas_id);
 
         $validated = $request->validate([
-            'mahasiswa_ids' => 'required|array'
+            'mahasiswa_ids' => 'required|array',
+            'mahasiswa_ids.*' => 'exists:mahasiswas,id'
         ]);
 
         $kelas->mahasiswas()->sync($validated['mahasiswa_ids']);
@@ -180,7 +200,7 @@ class KelasController extends Controller
         if($kelas->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data kelas tidak ditemukan',
+                'errors' => 'Data kelas tidak ditemukan',
             ], 404);
         }
 

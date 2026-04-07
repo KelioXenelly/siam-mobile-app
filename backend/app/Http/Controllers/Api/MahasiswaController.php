@@ -16,12 +16,12 @@ class MahasiswaController extends Controller
      */
     public function index()
     {
-        $mahasiswas = Mahasiswa::with('user')->get();
+        $mahasiswas = Mahasiswa::with('user', 'prodi')->get();
 
         if($mahasiswas->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan',
+                'errors' => 'Data mahasiswa tidak ditemukan',
             ]);
         }
 

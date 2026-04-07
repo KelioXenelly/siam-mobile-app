@@ -34,7 +34,7 @@ class Kelas extends Model
     }
 
     public function mahasiswas() {
-        return $this->belongsToMany(KelasMahasiswa::class, 'kelas_mahasiswa', 'kelas_id', 'mahasiswa_id');
+        return $this->belongsToMany(Mahasiswa::class, 'kelas_mahasiswa', 'kelas_id', 'mahasiswa_id');
     }
 
     public function pertemuans() {
