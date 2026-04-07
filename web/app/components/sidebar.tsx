@@ -20,6 +20,8 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', path: `/${user?.role}/dashboard`, icon: LayoutDashboard },
+    { name: 'Program Studi', path: `/${user?.role}/program-studi`, icon: GraduationCap },
+    { name: 'Ruangan', path: `/${user?.role}/ruangan`, icon: Building2 },
     { name: 'Users', path: `/${user?.role}/users`, icon: Users },
     { name: 'Mata Kuliah', path: `/${user?.role}/mata-kuliah`, icon: BookOpen },
     { name: 'Kelas', path: `/${user?.role}/kelas`, icon: Building2 },

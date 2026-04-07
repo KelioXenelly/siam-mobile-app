@@ -1,43 +1,38 @@
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
-  BookOpen,
-  Check,
-  Edit,
-  Eye,
   Plus,
   Search,
+  Edit,
   Trash2,
+  Eye,
   X,
+  Check,
+  MapPin,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Pagination, SortableHeader } from "~/components/table_features";
-import { useTable } from "~/hooks/useTable";
+import { useTable } from "../../hooks/useTable";
+import { Pagination, SortableHeader } from "../../components/table_features";
+import type { Ruangan } from "~/types/ruangan";
 import api from "~/lib/api";
-import type { MataKuliah } from "~/types/matakuliah";
 
-export default function MataKuliahPage() {
-  const [mataKuliahList, setMataKuliahList] = useState<MataKuliah[]>([]);
+export default function RuanganPage() {
+  const [ruanganList, setRuanganList] = useState<Ruangan[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<
     "create" | "edit" | "view" | "delete"
   >("create");
-  const [selectedMK, setSelectedMK] = useState<MataKuliah | null>(null);
+  const [selectedRuangan, setSelectedRuangan] = useState<Ruangan | null>(null);
+  const [formData, setFormData] = useState<Partial<Ruangan>>({});
 
-  // Form states
-  const [formData, setFormData] = useState<Partial<MataKuliah>>({});
-
-  const filteredData = (mataKuliahList || []).filter((mk) => {
-    const matchesSearch =
-      mk.nama_mk.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mk.kode_mk.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
+  const filteredData = ruanganList.filter(
+    (r) =>
+      r.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.kapasitas.toString().includes(searchTerm.toString()),
+  );
 
   const {
     currentData,
@@ -56,76 +51,79 @@ export default function MataKuliahPage() {
 
   const handleOpenModal = (
     mode: "create" | "edit" | "view" | "delete",
-    mk?: MataKuliah,
+    r?: Ruangan,
   ) => {
     setModalMode(mode);
-    if (mk) {
-      setSelectedMK(mk);
-      setFormData(mk);
+    if (r) {
+      setSelectedRuangan(r);
+      setFormData(r);
     } else {
-      setSelectedMK(null);
-      setFormData({ sks: 3 });
+      setSelectedRuangan(null);
+      setFormData({ kapasitas: 40, is_active: true });
     }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedMK(null);
+    setSelectedRuangan(null);
     setFormData({});
   };
 
   const handleSave = async () => {
-    if (!formData.kode_mk || !formData.nama_mk || !formData.sks) {
+    if (!formData.nama || !formData.kapasitas) {
       toast.error("Mohon lengkapi semua data wajib!");
       return;
     }
 
     if (modalMode === "create") {
-      const newMK = {
-        kode_mk: formData.kode_mk,
-        nama_mk: formData.nama_mk,
-        sks: formData.sks,
+      const newRuangan = {
+        nama: formData.nama,
+        kapasitas: formData.kapasitas,
+        is_active: formData.is_active ?? true,
       };
 
       try {
-        const res = await api.post("/mata-kuliah", newMK);
-        const createdMK = res.data.data;
-        setMataKuliahList([...mataKuliahList, createdMK]);
-        toast.success(res.data.message || "Mata Kuliah berhasil ditambahkan!"); // kenapa masih terlempar di sini? Bukannya error yaaa?
+        const res = await api.post("/ruangan", newRuangan);
+        const createdRuangan = res.data.data;
+        setRuanganList([...ruanganList, createdRuangan]);
+        toast.success(res.data.message || "Ruangan baru berhasil dibuat!");
       } catch (error: any) {
         const errors = error.response?.data?.errors;
 
-        if (errors?.kode_mk) {
-          toast.error("Kode mata kuliah sudah digunakan");
+        if (errors?.nama) {
+          toast.error("Nama ruangan sudah digunakan");
         } else {
-          toast.error("Gagal menambahkan mata kuliah.");
+          toast.error(errors || "Gagal membuat ruangan baru.");
         }
       }
-    } else if (modalMode === "edit" && selectedMK) {
-      const updatedMK = {
-        ...selectedMK,
-        kode_mk: formData.kode_mk || selectedMK.kode_mk,
-        nama_mk: formData.nama_mk || selectedMK.nama_mk,
-        sks: formData.sks || selectedMK.sks,
+    } else if (modalMode === "edit" && selectedRuangan) {
+      const updatedRuangan = {
+        ...selectedRuangan,
+        nama: formData.nama,
+        kapasitas: formData.kapasitas,
+        is_active: formData.is_active,
       };
 
       try {
-        const res = await api.put(`/mata-kuliah/${selectedMK.id}`, updatedMK);
-        const updatedMKFromRes = res.data.data;
-        setMataKuliahList(
-          mataKuliahList.map((mk) =>
-            mk.id === selectedMK.id ? updatedMKFromRes : mk,
+        const res = await api.put(
+          `/ruangan/${selectedRuangan.id}`,
+          updatedRuangan,
+        );
+        const updatedRuanganFromServer = res.data.data;
+        setRuanganList(
+          ruanganList.map((r) =>
+            r.id === selectedRuangan.id ? updatedRuanganFromServer : r,
           ),
         );
-        toast.success(res.data.message || "Mata Kuliah berhasil diperbarui!");
+        toast.success(res.data.message || "Ruangan berhasil diperbarui!");
       } catch (error: any) {
         const errors = error.response?.data?.errors;
 
-        if (errors?.kode_mk) {
-          toast.error("Kode mata kuliah sudah digunakan");
+        if (errors?.nama) {
+          toast.error("Nama ruangan sudah digunakan");
         } else {
-          toast.error("Gagal memperbarui mata kuliah.");
+          toast.error(errors || "Gagal memperbarui ruangan.");
         }
       }
     }
@@ -133,32 +131,31 @@ export default function MataKuliahPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!selectedMK) return;
+    if (!selectedRuangan) return;
 
     try {
-      const res = await api.delete(`/mata-kuliah/${id}`);
-      setMataKuliahList(mataKuliahList.filter((mk) => mk.id !== id));
-      toast.success(res.data.message || "Mata Kuliah berhasil dihapus!");
+      const res = await api.delete(`/ruangan/${id}`);
+      setRuanganList(ruanganList.filter((r) => r.id !== id));
+      toast.success(res.data.message || "Ruangan berhasil dihapus!");
       handleCloseModal();
     } catch (error: any) {
       const errors = error.response?.data?.errors;
 
-      toast.error(errors || "Gagal menghapus mata kuliah.");
+      toast.error(errors || "Gagal menghapus ruangan.");
     }
   };
 
   useEffect(() => {
-    const fetchMataKuliah = async () => {
+    const fetchRuangan = async () => {
       try {
-        const res = await api.get("/mata-kuliah");
-        setMataKuliahList(res.data.data);
-        console.log("Fetched Mata Kuliah:", res.data.data);
+        const res = await api.get("/ruangan");
+        setRuanganList(res.data.data);
       } catch (error) {
-        toast.error("Gagal memuat data mata kuliah.");
+        toast.error("Gagal mengambil data ruangan.");
       }
     };
 
-    fetchMataKuliah();
+    fetchRuangan();
   }, []);
 
   return (
@@ -166,10 +163,10 @@ export default function MataKuliahPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-            Manajemen Mata Kuliah
+            Manajemen Ruangan
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Kelola data kurikulum dan mata kuliah yang tersedia.
+            Kelola data ruangan kelas dan lab.
           </p>
         </div>
 
@@ -178,17 +175,16 @@ export default function MataKuliahPage() {
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 focus:ring-4 focus:ring-blue-600/20 transition-all shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          <span>Tambah Mata Kuliah</span>
+          <span>Tambah Ruangan</span>
         </button>
       </div>
 
-      {/* Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
         <div className="relative w-full">
           <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Cari berdasarkan nama atau kode mata kuliah..."
+            placeholder="Cari berdasarkan nama ruangan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
@@ -196,8 +192,7 @@ export default function MataKuliahPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 overflow-hidden flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -206,14 +201,20 @@ export default function MataKuliahPage() {
                   No
                 </th>
                 <SortableHeader
-                  label="Mata Kuliah"
-                  sortKey="nama_mk"
+                  label="Nama Ruangan"
+                  sortKey="nama"
                   currentSort={sortConfig}
                   onRequestSort={requestSort as (key: string) => void}
                 />
                 <SortableHeader
-                  label="SKS"
-                  sortKey="sks"
+                  label="Kapasitas"
+                  sortKey="kapasitas"
+                  currentSort={sortConfig}
+                  onRequestSort={requestSort as (key: string) => void}
+                />
+                <SortableHeader
+                  label="Status"
+                  sortKey="is_active"
                   currentSort={sortConfig}
                   onRequestSort={requestSort as (key: string) => void}
                 />
@@ -226,54 +227,58 @@ export default function MataKuliahPage() {
               {currentData.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-6 py-12 text-center text-slate-500"
                   >
-                    Tidak ada mata kuliah yang ditemukan.
+                    Tidak ada ruangan yang ditemukan.
                   </td>
                 </tr>
               ) : (
-                currentData.map((mk, index) => (
+                currentData.map((r, index) => (
                   <tr
-                    key={mk.id}
+                    key={r.id}
                     className="hover:bg-slate-50/50 transition-colors group"
                   >
                     <td className="px-6 py-4 text-sm text-slate-500">
-                      {index + 1}
+                      {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-slate-900">
-                          {mk.nama_mk}
-                        </span>
-                        <span className="text-sm font-medium text-blue-600">
-                          {mk.kode_mk}
-                        </span>
-                      </div>
+                    <td className="px-6 py-4 font-bold text-slate-800">
+                      {r.nama}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                      {mk.sks} SKS
+                      {r.kapasitas} Kursi
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          r.is_active == true
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : "bg-slate-100 text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${r.is_active == true ? "bg-green-500" : "bg-slate-400"}`}
+                        ></span>
+                        {r.is_active == true ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleOpenModal("view", mk)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Detail"
+                          onClick={() => handleOpenModal("view", r)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleOpenModal("edit", mk)}
-                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Edit"
+                          onClick={() => handleOpenModal("edit", r)}
+                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleOpenModal("delete", mk)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Hapus"
+                          onClick={() => handleOpenModal("delete", r)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -295,10 +300,9 @@ export default function MataKuliahPage() {
         />
       </div>
 
-      {/* Modal */}
       <AnimatePresence>
         {isModalOpen && modalMode !== "delete" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -310,86 +314,89 @@ export default function MataKuliahPage() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100"
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm border border-slate-100"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                    <BookOpen className="w-4 h-4" />
+                    <MapPin className="w-4 h-4" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-800">
                     {modalMode === "create"
-                      ? "Tambah Mata Kuliah"
+                      ? "Tambah Ruangan"
                       : modalMode === "edit"
-                        ? "Edit Mata Kuliah"
-                        : "Detail Mata Kuliah"}
+                        ? "Edit Ruangan"
+                        : "Detail Ruangan"}
                   </h3>
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="p-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700">
-                      Kode Mata Kuliah <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.kode_mk || ""}
-                      onChange={(e) =>
-                        setFormData({ ...formData, kode_mk: e.target.value })
-                      }
-                      disabled={modalMode === "view"}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100 font-medium"
-                      placeholder="Contoh: TIF101"
-                      required
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">
+                    Nama Ruangan <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nama || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nama: e.target.value })
+                    }
+                    disabled={modalMode === "view"}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 font-medium"
+                    placeholder="Contoh: GKB-101"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">
+                    Kapasitas Kursi <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.kapasitas || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        kapasitas: parseInt(e.target.value),
+                      })
+                    }
+                    disabled={modalMode === "view"}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70"
+                    placeholder="Contoh: 40"
+                    required
+                  />
+                </div>
 
+                {modalMode !== "create" && (
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700">
-                      Jumlah SKS <span className="text-red-500">*</span>
+                      Status <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="6"
-                      value={formData.sks || ""}
+                    <select
+                      value={formData.is_active ? "true" : "false"}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          sks: parseInt(e.target.value),
+                          // 2. Ubah kembali string dari dropdown menjadi boolean untuk disimpan ke state
+                          // Jika e.target.value adalah "true", maka is_active akan bernilai boolean true
+                          is_active: e.target.value === "true",
                         })
                       }
                       disabled={modalMode === "view"}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
-                      required
-                    />
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70"
+                    >
+                      <option value="true">Aktif</option>
+                      <option value="false">Nonaktif</option>
+                    </select>
                   </div>
-
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-sm font-medium text-slate-700">
-                      Nama Mata Kuliah <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.nama_mk || ""}
-                      onChange={(e) =>
-                        setFormData({ ...formData, nama_mk: e.target.value })
-                      }
-                      disabled={modalMode === "view"}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
-                      placeholder="Contoh: Algoritma dan Pemrograman"
-                      required
-                    />
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
@@ -402,7 +409,7 @@ export default function MataKuliahPage() {
                 {modalMode !== "view" && (
                   <button
                     onClick={handleSave}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 focus:ring-4 focus:ring-blue-600/20 transition-all shadow-sm"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 shadow-sm"
                   >
                     <Check className="w-4 h-4" />
                     <span>Simpan Data</span>
@@ -441,27 +448,27 @@ export default function MataKuliahPage() {
                 </div>
 
                 <h3 className="text-lg font-semibold text-slate-800">
-                  Hapus Mata Kuliah
+                  Hapus Ruangan
                 </h3>
 
                 <p className="text-sm text-slate-500 mt-1">
-                  Apakah kamu yakin ingin menghapus mata kuliah ini?
+                  Apakah kamu yakin ingin menghapus Ruangan ini?
                 </p>
               </div>
 
               {/* CONTENT */}
               <div className="px-6 pb-4 text-sm text-slate-600 space-y-1">
                 <p>
-                  <span className="font-medium text-slate-800">Nama:</span>{" "}
-                  {formData.nama_mk}
+                  <span className="font-medium text-slate-800">
+                    Nama Ruangan:
+                  </span>{" "}
+                  {formData.nama}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-800">Kode:</span>{" "}
-                  {formData.kode_mk}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-800">SKS:</span>{" "}
-                  {formData.sks}
+                  <span className="font-medium text-slate-800">
+                    Kapasitas:
+                  </span>{" "}
+                  {formData.kapasitas} Kursi
                 </p>
               </div>
 
@@ -475,7 +482,7 @@ export default function MataKuliahPage() {
                 </button>
 
                 <button
-                  onClick={() => handleDelete(selectedMK!.id)}
+                  onClick={() => handleDelete(selectedRuangan!.id)}
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-sm"
                 >
                   Hapus

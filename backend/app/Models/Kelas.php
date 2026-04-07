@@ -9,12 +9,16 @@ class Kelas extends Model
     protected $table = 'kelas';
     
     protected $fillable = [
+        'kode_kelas',
         'mata_kuliah_id',
         'dosen_id',
-        'kode_kelas',
+        'ruangan_id',
         'semester',
         'tahun_ajaran',
-        'ruangan',
+        'hari',
+        'jam_mulai',
+        'jam_selesai',
+        'kapasitas',
     ];
 
     public function mataKuliah() {
@@ -23,6 +27,10 @@ class Kelas extends Model
 
     public function dosen() {
         return $this->belongsTo(Dosen::class);
+    }
+
+    public function ruangan() {
+        return $this->belongsTo(Ruangan::class);
     }
 
     public function mahasiswas() {

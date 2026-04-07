@@ -76,7 +76,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/10 blur-[100px]" />
       </div>
 
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -88,7 +88,7 @@ export default function LoginPage() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
-          <div className="relative z-10 mt-24">
+          <div className="relative z-10">
             <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center mb-6 shadow-inner border border-white/20">
               <LayoutDashboard className="w-6 h-6 text-white" />
             </div>
@@ -96,17 +96,14 @@ export default function LoginPage() {
               Sistem Informasi Absensi Mahasiswa
             </h2>
             <p className="text-blue-100 text-sm leading-relaxed">
-              Portal manajemen terpusat untuk memantau data mahasiswa, dosen,
-              jadwal perkuliahan, dan statistik kehadiran secara real-time.
+              Portal manajemen terpusat untuk memantau data mahasiswa, dosen, jadwal perkuliahan, dan statistik kehadiran secara real-time.
             </p>
           </div>
 
-          <div className="relative z-10 mb-24">
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 mt-6">
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <p className="text-white/90 text-sm font-medium">
-                System Status: All systems operational
-              </p>
+              <p className="text-white/90 text-sm font-medium">System Status: All systems operational</p>
             </div>
           </div>
         </div>
@@ -120,26 +117,18 @@ export default function LoginPage() {
                 <span className="text-white font-bold text-lg">S</span>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-                  SIAM Admin
-                </h2>
+                <h2 className="text-xl font-bold text-slate-800 tracking-tight">SIAM Admin</h2>
               </div>
             </div>
 
             <div className="mb-10">
-              <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">
-                Masuk ke Dashboard
-              </h1>
-              <p className="text-slate-500 text-sm">
-                Gunakan kredensial administrator Anda untuk mengakses sistem.
-              </p>
+              <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">Masuk ke Dashboard</h1>
+              <p className="text-slate-500 text-sm">Gunakan kredensial administrator Anda untuk mengakses sistem.</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">
-                  Email Address
-                </label>
+                <label className="text-sm font-semibold text-slate-700">Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-slate-400" />
@@ -156,13 +145,8 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-slate-700">
-                    Password
-                  </label>
-                  <a
-                    href="#"
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                  >
+                  <label className="text-sm font-semibold text-slate-700">Password</label>
+                  <a href="#" className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
                     Lupa password?
                   </a>
                 </div>
@@ -182,19 +166,15 @@ export default function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
               {error && (
-                <motion.div
+                <motion.div 
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
+                  animate={{ opacity: 1, height: 'auto' }}
                   className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 flex items-center gap-2"
                 >
                   <div className="w-1 h-1 rounded-full bg-red-600" />

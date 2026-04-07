@@ -2,11 +2,11 @@
 
 use App\Http\Controllers\Api\AbsensiController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\DosenController;
 use App\Http\Controllers\Api\KelasController;
-use App\Http\Controllers\Api\MahasiswaController;
 use App\Http\Controllers\Api\MataKuliahController;
 use App\Http\Controllers\Api\PertemuanController;
+use App\Http\Controllers\Api\ProdiController;
+use App\Http\Controllers\Api\RuanganController;
 use App\Http\Controllers\Api\SesiAbsensiController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,10 +25,15 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
     Route::put('/users/{user_id}', [AuthController::class, 'updateUser']);
     Route::delete('/users/{user_id}', [AuthController::class, 'deleteUser']);
 
-    Route::apiResource('kelas', KelasController::class);
-    Route::post('kelas/{kelas_id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
-    Route::apiResource('mata-kuliah', MataKuliahController::class);
-    Route::apiResource('pertemuan', PertemuanController::class);
+    Route::apiResource('/program-studi', ProdiController::class);
+
+    Route::apiResource('/ruangan', RuanganController::class);
+
+    Route::apiResource('/mata-kuliah', MataKuliahController::class);
+    
+    Route::apiResource('/kelas', KelasController::class);
+    Route::post('/kelas/{kelas_id}/assign-mahasiswa', [KelasController::class, 'assignMahasiswa']);
+    Route::apiResource('/pertemuan', PertemuanController::class);
 });
 
 Route::middleware(['auth:sanctum','role:dosen'])->group(function () {

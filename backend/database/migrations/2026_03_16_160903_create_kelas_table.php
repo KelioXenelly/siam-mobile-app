@@ -13,13 +13,17 @@ return new class extends Migration
     {
         Schema::create('kelas', function (Blueprint $table) {
             $table->id();
+            $table->string('kode_kelas');
             $table->foreignId('mata_kuliah_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('dosen_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
-            $table->string('kode_kelas');
+            $table->foreignId('ruangan_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->unsignedTinyInteger('semester');
             $table->string('tahun_ajaran');
-            $table->string('ruangan');
-            $table->unique(['mata_kuliah_id', 'kode_kelas', 'semester', 'tahun_ajaran']);
+            $table->enum('hari', ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']);
+            $table->time('jam_mulai');
+            $table->time('jam_selesai');
+            $table->integer('kapasitas');
+            $table->unique(['mata_kuliah_id', 'kode_kelas']);
             $table->timestamps();
         });
     }

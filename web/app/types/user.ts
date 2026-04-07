@@ -5,13 +5,13 @@ export type User = {
   role: 'admin' | 'mahasiswa' | 'dosen';
   is_active: boolean;
   nim_nidn: string;
-  prodi: string;
+  prodi_id: number;
   angkatan: string;
   password: string;
 
   mahasiswa?: {
     nim: string;
-    prodi: string;
+    prodi_id: number;
     angkatan: string;
   } | null;
 

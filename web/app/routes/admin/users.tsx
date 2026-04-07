@@ -12,16 +12,23 @@ import {
   GraduationCap,
   X,
   Check,
+  Users,
 } from "lucide-react";
 import api from "~/lib/api";
 import type { User } from "~/types/user";
 import type { Role } from "~/types/role";
+import type { Prodi } from "~/types/prodi";
 import { toast } from "sonner";
+import { useTable } from "~/hooks/useTable";
+import { Pagination, SortableHeader } from "~/components/table_features";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [prodis, setProdis] = useState<Prodi[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterRole, setFilterRole] = useState<Role | "all">("all");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,20 +40,37 @@ export default function UsersPage() {
   // Form states
   const [formData, setFormData] = useState<Partial<User>>({});
 
-  const filteredUsers = users.filter((user) => {
-    // 1. Ambil nilai NIM atau NIDN secara dinamis
-    const nimNidn = user.mahasiswa?.nim || user.dosen?.nidn || "";
+  const mappedUsers = (users || []).map((user) => ({
+    ...user,
+    // Ambil nilai NIM atau NIDN secara dinamis
+    nim_nidn: user.mahasiswa?.nim || user.dosen?.nidn || "",
+  }));
 
+  const filteredUsers = mappedUsers.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      // 2. Gunakan variabel nimNidn yang sudah kita buat di atas
-      nimNidn.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.nim_nidn.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
+      
     const matchesRole = filterRole === "all" || user.role === filterRole;
 
     return matchesSearch && matchesRole;
   });
+
+  const {
+    currentData,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    requestSort,
+    sortConfig,
+    totalItems,
+  } = useTable(filteredUsers, itemsPerPage);
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1); // ❗ reset biar gak out of range
+  };
 
   const handleOpenModal = (
     mode: "create" | "edit" | "view" | "delete",
@@ -59,7 +83,7 @@ export default function UsersPage() {
       setFormData({
         ...user,
         nim_nidn: user.mahasiswa?.nim || user.dosen?.nidn || "",
-        prodi: user.mahasiswa?.prodi || "",
+        prodi_id: user.mahasiswa?.prodi_id,
         angkatan: user.mahasiswa?.angkatan || "",
       });
     } else {
@@ -76,6 +100,7 @@ export default function UsersPage() {
   };
 
   const handleSave = async () => {
+    setIsLoading(true);
     // Ambil role dan nilai input nim_nidn dari form
     const role = (formData.role as Role) || "mahasiswa";
     const inputNimNidn = formData.nim_nidn || "";
@@ -87,7 +112,7 @@ export default function UsersPage() {
         role: role,
         nim: role === "mahasiswa" ? inputNimNidn : null,
         nidn: role === "dosen" ? inputNimNidn : null,
-        prodi: role === "mahasiswa" ? formData.prodi || null : null,
+        prodi_id: role === "mahasiswa" ? formData.prodi_id || null : null,
         angkatan: role === "mahasiswa" ? formData.angkatan || null : null,
       };
 
@@ -96,9 +121,18 @@ export default function UsersPage() {
         const createdUser = res.data.data;
         setUsers([...users, createdUser]);
         toast.success(res.data.message || "Pengguna baru berhasil dibuat!");
-      } catch (error) {
-        console.error("Gagal Membuat Pengguna Baru:", error);
-        toast.error("Gagal membuat pengguna baru.");
+      } catch (error: any) {
+        const errors = error.response?.data?.errors;
+
+        if (errors?.email) {
+          toast.error("Email sudah digunakan");
+        } else if (errors?.nim) {
+          toast.error("NIM sudah digunakan");
+        } else if (errors?.nidn) {
+          toast.error("NIDN sudah digunakan");
+        } else {
+          toast.error("Gagal membuat pengguna baru.");
+        }
       }
     } else if (modalMode === "edit" && selectedUser) {
       const updatedUser = {
@@ -108,18 +142,14 @@ export default function UsersPage() {
         role: formData.role || selectedUser.role,
         nim: role === "mahasiswa" ? inputNimNidn : null,
         nidn: role === "dosen" ? inputNimNidn : null,
-        prodi:
+        prodi_id:
           role === "mahasiswa"
-            ? formData.prodi || selectedUser.mahasiswa?.prodi || null
-            : null,
+            ? formData.prodi_id : undefined,
         angkatan:
           role === "mahasiswa"
             ? formData.angkatan || selectedUser.mahasiswa?.angkatan || null
             : null,
-        is_active:
-          formData.is_active !== undefined
-            ? formData.is_active
-            : selectedUser.is_active,
+        is_active: formData.is_active,
         password: formData.password || undefined, // Hanya kirim password jika diisi
       };
 
@@ -132,12 +162,22 @@ export default function UsersPage() {
           ),
         );
         toast.success(res.data.message || "Pengguna berhasil diperbarui!");
-      } catch (error) {
-        console.error("Gagal Memperbarui Pengguna:", error);
-        toast.error("Gagal memperbarui pengguna.");
+      } catch (error: any) {
+        const errors = error.response?.data?.errors;
+
+        if (errors?.email) {
+          toast.error("Email sudah digunakan");
+        } else if (errors?.nim) {
+          toast.error("NIM sudah digunakan");
+        } else if (errors?.nidn) {
+          toast.error("NIDN sudah digunakan");
+        } else {
+          toast.error(errors || "Gagal memperbarui pengguna.");
+        }
       }
     }
     handleCloseModal();
+    setIsLoading(false);
   };
 
   const handleDelete = async (id: number) => {
@@ -148,9 +188,10 @@ export default function UsersPage() {
       setUsers(users.filter((user) => user.id !== id));
       toast.success(res.data.message || "Pengguna berhasil dihapus!");
       handleCloseModal();
-    } catch (error) {
-      console.error("Gagal menghapus pengguna:", error);
-      toast.error("Gagal menghapus pengguna.");
+    } catch (error: any) {
+      const errors = error.response?.data?.errors;
+
+      toast.error(errors || "Gagal menghapus pengguna.");
     }
   };
 
@@ -183,12 +224,21 @@ export default function UsersPage() {
         const res = await api.get("/users");
         setUsers(res.data.data);
       } catch (error) {
-        console.error("Failed to fetch users:", error);
-        setUsers([]);
+        toast.error("Gagal mengambil data pengguna.");
+      }
+    };
+
+    const fetchProdi = async () => {
+      try {
+        const res = await api.get("/program-studi");
+        setProdis(res.data.data);
+      } catch (error) {
+        toast.error("Gagal mengambil data prodi.");
       }
     };
 
     fetchUsers();
+    fetchProdi();
   }, []);
 
   return (
@@ -250,25 +300,37 @@ export default function UsersPage() {
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-12">
                   No
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Informasi Pengguna
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  NIM / NIDN
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Status
-                </th>
+                <SortableHeader
+                  label="Informasi Pengguna"
+                  sortKey="name"
+                  currentSort={sortConfig}
+                  onRequestSort={requestSort as (key: string) => void}
+                />
+                <SortableHeader
+                  label="Role"
+                  sortKey="role"
+                  currentSort={sortConfig}
+                  onRequestSort={requestSort as (key: string) => void}
+                />
+                <SortableHeader
+                  label="NIM / NIDN"
+                  sortKey="nim_nidn"
+                  currentSort={sortConfig}
+                  onRequestSort={requestSort as (key: string) => void}
+                />
+                <SortableHeader
+                  label="Status"
+                  sortKey="is_active"
+                  currentSort={sortConfig}
+                  onRequestSort={requestSort as (key: string) => void}
+                />
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Aksi
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {filteredUsers.length === 0 ? (
+              {currentData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
@@ -278,7 +340,7 @@ export default function UsersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user, index) => (
+                currentData.map((user, index) => (
                   <tr
                     key={user.id}
                     className="hover:bg-slate-50/50 transition-colors group"
@@ -345,6 +407,14 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
       </div>
 
       {/* Modal CRUD */}
@@ -365,13 +435,18 @@ export default function UsersPage() {
               className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                <h3 className="text-lg font-semibold text-slate-800">
-                  {modalMode === "create"
-                    ? "Tambah Pengguna Baru"
-                    : modalMode === "edit"
-                      ? "Edit Pengguna"
-                      : "Detail Pengguna"}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    {modalMode === "create"
+                      ? "Tambah Pengguna Baru"
+                      : modalMode === "edit"
+                        ? "Edit Pengguna"
+                        : "Detail Pengguna"}
+                  </h3>
+                </div>
                 <button
                   onClick={handleCloseModal}
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
@@ -384,7 +459,7 @@ export default function UsersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5 sm:col-span-2">
                     <label className="text-sm font-medium text-slate-700">
-                      Nama Lengkap
+                      Nama Lengkap <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -395,12 +470,13 @@ export default function UsersPage() {
                       disabled={modalMode === "view"}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
                       placeholder="Masukkan nama lengkap"
+                      required
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700">
-                      Role
+                      Role <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={formData.role || "mahasiswa"}
@@ -421,7 +497,7 @@ export default function UsersPage() {
 
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700">
-                      NIM / NIDN
+                      NIM / NIDN <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -445,7 +521,7 @@ export default function UsersPage() {
 
                   <div className="space-y-1.5 sm:col-span-2">
                     <label className="text-sm font-medium text-slate-700">
-                      Email
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -463,23 +539,33 @@ export default function UsersPage() {
                     <>
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-700">
-                          Prodi
+                          Prodi <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="text"
-                          value={formData.prodi || ""}
-                          onChange={(e) =>
-                            setFormData({ ...formData, prodi: e.target.value })
-                          }
-                          disabled={modalMode === "view"}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100"
-                          placeholder="Prodi..."
-                        />
+                        {prodis.length > 0 && (
+                          <select
+                            value={formData.prodi_id || ""}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                prodi_id: Number(e.target.value),
+                              })
+                            }
+                            disabled={modalMode === "view"}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-70 disabled:bg-slate-100 capitalize"
+                          >
+                            <option value="">-- Pilih Prodi --</option>
+                            {prodis.map((prodi) => (
+                              <option key={prodi.id} value={prodi.id}>
+                                {prodi.nama_prodi}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
 
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-700">
-                          Angkatan
+                          Angkatan <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -502,7 +588,7 @@ export default function UsersPage() {
                     <>
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-700">
-                          Status
+                          Status <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={formData.is_active ? "true" : "false"}

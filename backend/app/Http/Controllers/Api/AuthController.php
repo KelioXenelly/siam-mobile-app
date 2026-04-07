@@ -90,7 +90,7 @@ class AuthController extends Controller
             'role' => 'required|in:admin,dosen,mahasiswa',
             'nim' => 'required_if:role,mahasiswa|unique:mahasiswas,nim',
             'nidn' => 'required_if:role,dosen|unique:dosens,nidn',
-            'prodi' => 'required_if:role,mahasiswa',
+            'prodi_id' => 'required_if:role,mahasiswa|exists:prodis,id',
             'angkatan' => 'required_if:role,mahasiswa',
         ]);
 
@@ -106,7 +106,7 @@ class AuthController extends Controller
             $user->mahasiswa()->create([
                 'user_id' => $user->id,
                 'nim' => $request->nim,
-                'prodi' => $request->prodi,
+                'prodi_id' => $request->prodi_id,
                 'angkatan' => $request->angkatan,
             ]);
         } elseif ($request->role === 'dosen') {
@@ -139,7 +139,7 @@ class AuthController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
             'is_active' => 'sometimes|required|boolean',
-            'prodi' => 'required_if:role,mahasiswa',
+            'prodi_id' => 'required_if:role,mahasiswa|exists:prodis,id',
             'angkatan' => 'required_if:role,mahasiswa',
             'nidn' => 'required_if:role,dosen|unique:dosens,nidn,' . ($user->dosen ? $user->dosen->id : 'null'),
             'nim' => 'required_if:role,mahasiswa|unique:mahasiswas,nim,' . ($user->mahasiswa ? $user->mahasiswa->id : 'null'),
@@ -147,12 +147,24 @@ class AuthController extends Controller
             'password' => 'sometimes|nullable|min:8',
         ]);
 
-        $userData = $request->only('name', 'email', 'is_active', 'role', 'password');
+        $userData = $request->only('name', 'email', 'is_active', 'prodi_id', 'angkatan', 'nidn', 'nim', 'role', 'password');
 
         if ($request->filled('password')) {
             $userData['password'] = Hash::make($request->password);
         } else {
             unset($userData['password']); // Jangan update password jika tidak diisi
+        }
+
+        if ($user->dosen && $user->dosen->kelas()->exists()) {
+            return response()->json([
+                'errors' => 'Dosen masih memiliki kelas, pengguna ini tidak bisa diubah'
+            ], 400);
+        }
+
+        if ($user->mahasiswa && $user->mahasiswa->kelas()->exists()) {
+            return response()->json([
+                'errors' => 'Mahasiswa masih memiliki kelas, pengguna ini tidak bisa diubah'
+            ], 400);
         }
 
         // Update tabel users
@@ -165,7 +177,7 @@ class AuthController extends Controller
                 ['user_id' => $user->id],
                 [
                     'nim' => $request->nim,
-                    'prodi' => $request->prodi,
+                    'prodi_id' => $request->prodi_id,
                     'angkatan' => $request->angkatan,
                 ]
             );
@@ -191,6 +203,18 @@ class AuthController extends Controller
     public function deleteUser($user_id)
     {
         $user = User::findOrFail($user_id);
+
+        if ($user->dosen && $user->dosen->kelas()->exists()) {
+            return response()->json([
+                'errors' => 'Dosen masih memiliki kelas, pengguna ini tidak bisa dihapus'
+            ], 400);
+        }
+
+        if ($user->mahasiswa && $user->mahasiswa->kelas()->exists()) {
+            return response()->json([
+                'errors' => 'Mahasiswa masih memiliki kelas, pengguna ini tidak bisa dihapus'
+            ], 400);
+        }
         
         if($user->mahasiswa) {
             $user->mahasiswa()->delete();
