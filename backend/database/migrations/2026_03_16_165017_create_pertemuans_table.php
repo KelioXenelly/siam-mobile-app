@@ -16,6 +16,10 @@ return new class extends Migration
             $table->foreignId('kelas_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->unsignedTinyInteger('pertemuan_ke');
             $table->date('tanggal');
+            $table->string('topik');
+            $table->enum('status', ['Terjadwal', 'Berlangsung', 'Selesai'])->default('Terjadwal');
+            $table->time('started_at')->nullable();
+            $table->time('ended_at')->nullable();
             $table->unique(['kelas_id','pertemuan_ke']);
             $table->timestamps();
         });

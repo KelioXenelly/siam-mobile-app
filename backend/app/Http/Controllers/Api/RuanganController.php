@@ -13,7 +13,7 @@ class RuanganController extends Controller
      */
     public function index()
     {
-        $ruangans = Ruangan::with('kelas')->get();
+        $ruangans = Ruangan::with('kelas')->orderBy('nama', 'asc')->get();
 
         if ($ruangans->isEmpty()) {
             return response()->json([

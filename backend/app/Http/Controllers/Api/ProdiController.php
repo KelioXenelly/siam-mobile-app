@@ -14,7 +14,7 @@ class ProdiController extends Controller
      */
     public function index()
     {
-        $prodis = Prodi::with('mahasiswas')->get();
+        $prodis = Prodi::with('mahasiswas')->orderBy('kode_prodi', 'asc')->get();
 
         if ($prodis->isEmpty()) {
             return response()->json([

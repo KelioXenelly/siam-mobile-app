@@ -14,7 +14,7 @@ class MataKuliahController extends Controller
      */
     public function index()
     {
-        $mataKuliahs = MataKuliah::with('kelas')->get();
+        $mataKuliahs = MataKuliah::with('kelas')->orderBy('kode_mk', 'asc')->get();
 
         if ($mataKuliahs->isEmpty()) {
             return response()->json([

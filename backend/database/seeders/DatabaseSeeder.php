@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             RuanganSeeder::class,
             KelasSeeder::class,
             KelasMahasiswaSeeder::class,
+            PertemuanSeeder::class,
         ]);
     }
 }

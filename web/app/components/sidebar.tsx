@@ -14,7 +14,7 @@ import { logout } from '~/lib/auth';
 import { useAuth } from '~/context/auth_context';
 
 export default function Sidebar() {
-  const {user} = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
