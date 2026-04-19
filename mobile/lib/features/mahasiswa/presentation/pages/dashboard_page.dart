@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/shared/widgets/glass_card.dart';
-import 'package:mobile/shared/widgets/progress_ring.dart';
-import 'package:mobile/shared/widgets/bottom_nav.dart';
+import 'package:mobile/shared/widgets/mahasiswa/glass_card.dart';
+import 'package:mobile/shared/widgets/mahasiswa/progress_ring.dart';
+import 'package:mobile/shared/widgets/mahasiswa/bottom_nav.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -12,7 +12,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
 
-  int _currentIndex = 0;
+  final _currentIndex = 0;
 
     void _onNavTapped(int index) {
       if (index == _currentIndex) return;
@@ -126,7 +126,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.3),
+                          color: Colors.blue.withValues(alpha: 0.3),
                           blurRadius: 10,
                         )
                       ],

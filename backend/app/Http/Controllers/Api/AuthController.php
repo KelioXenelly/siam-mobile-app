@@ -6,9 +6,55 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
+    #[OA\Post(
+        path: "/api/login",
+        summary: "Login user (Mahasiswa / Dosen)",
+        tags: ["Auth"]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["identifier", "password"],
+            properties: [
+                new OA\Property(property: "identifier", description: "Email, NIM, atau NIDN", type: "string", example: "23110001 / eric@itbss.ac.id / 0012345678"),
+                new OA\Property(property: "password", type: "string", example: "password123")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Login berhasil",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Login berhasil! Selamat datang Kelio \u{1F44B}"),
+                new OA\Property(property: "token", type: "string", example: "1|abc123xyz"),
+                new OA\Property(
+                    property: "user",
+                    properties: [
+                        new OA\Property(property: "id", type: "integer", example: 1),
+                        new OA\Property(property: "name", type: "string", example: "Kelio Xenelly"),
+                        new OA\Property(property: "email", type: "string", example: "kelio@gmail.com"),
+                        new OA\Property(property: "role", type: "string", example: "mahasiswa"),
+                        new OA\Property(property: "is_active", type: "boolean", example: true)
+                    ],
+                    type: "object"
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: "Login gagal",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "errors", type: "string", example: "Email atau password salah")
+            ]
+        )
+    )]
     public function login(Request $request)
     {
         $request->validate([
@@ -27,13 +73,13 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Login gagal'
+                'errors' => 'Email atau password salah'
             ], 401);
         }
 
         if (!$user->is_active) {
             return response()->json([
-                'message' => 'Akun tidak aktif'
+                'errors' => 'Akun tidak aktif'
             ], 401);
         }
 
@@ -215,13 +261,13 @@ class AuthController extends Controller
                 'errors' => 'Mahasiswa masih memiliki kelas, pengguna ini tidak bisa dihapus'
             ], 400);
         }
-        
-        if($user->mahasiswa) {
+
+        if ($user->mahasiswa) {
             $user->mahasiswa()->delete();
-        } elseif($user->dosen) {
+        } elseif ($user->dosen) {
             $user->dosen()->delete();
         }
-        
+
         $user->delete();
 
         return response()->json([

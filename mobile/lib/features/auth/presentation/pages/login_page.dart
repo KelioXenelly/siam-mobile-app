@@ -1,9 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:mobile/core/services/storage_service.dart';
-import 'package:mobile/core/services/auth_service.dart';
-import 'package:mobile/shared/widgets/glass_card.dart';
+import 'package:mobile/features/auth/data/services/auth_service.dart';
+import 'package:mobile/shared/widgets/mahasiswa/glass_card.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,42 +14,69 @@ class _LoginPageState extends State<LoginPage> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  String _role = 'mahasiswa'; // State untuk Role
   bool _obscureText = true;    // State untuk Show/Hide Password
   bool _isLoading = false;     // State untuk Loading
-  String? _errorMessage;
+  String _role = 'mahasiswa';  // State untuk Role Selection
+
+  @override
+  void dispose() {
+    _identifierController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _handleLogin() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (_identifierController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email/ID dan Password tidak boleh kosong"))
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
     try {
-      final response = await _authService.login(
+      final user = await _authService.login(
           _identifierController.text,
           _passwordController.text
       );
 
-      final data = response.data;
+      if (!mounted) return;
 
-      final token = data['token'];
-      final user = data['user'];
-      await StorageService.saveToken(token);
+      // Validasi: Apakah Role di Server == Role di Tab?
+      if (user.role != _role) {
+        // PENTING: Karena login() di AuthService biasanya otomatis simpan token,
+        // Kita harus logout/clear session jika tab-nya salah agar tidak auto-login.
 
-      print("TOKEN DISIMPAN: $token");
-      print("USER: $user");
+        try {
+          await _authService.logout();
+        } catch (_) {
+          // Abaikan error logout
+        }
 
+        final formattedRole = user.role[0].toUpperCase() + user.role.substring(1);
+        throw Exception("Akun Anda terdaftar sebagai $formattedRole. Silakan pilih tab yang sesuai.");
+      }
 
-      final targetPath =
-      // Navigasi berdasarkan role
-      _role == 'mahasiswa' ? '/dashboard' : '/dosen/dashboard';
-
-      Navigator.pushReplacementNamed(context, targetPath);
+      // Jika benar, navigasi sesuai role
+      if (user.role == 'mahasiswa') {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else if (user.role == 'dosen') {
+        Navigator.pushReplacementNamed(context, '/dosen/dashboard');
+      }
     } catch (e) {
-      setState(() => _errorMessage = "Login gagal. Silakan coba lagi.");
+      final message = e.toString().replaceAll('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        )
+      );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -125,11 +149,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
-                      if (_errorMessage != null) ...[
-                        const SizedBox(height: 12),
-                        Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
-                      ],
-
                       const SizedBox(height: 24),
 
                       // Submit Button
@@ -189,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: Colors.white.withOpacity(0.5),
+      fillColor: Colors.white.withValues(alpha: 0.5),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
