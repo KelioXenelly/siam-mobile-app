@@ -1,36 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/services/storage_service.dart';
-import 'package:mobile/shared/widgets/mahasiswa/bottom_nav.dart';
+import 'package:mobile/shared/widgets/dosen/bottom_nav.dart';
 import 'package:mobile/shared/widgets/mahasiswa/glass_card.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class DosenProfilePage extends StatefulWidget {
+  const DosenProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<DosenProfilePage> createState() => _DosenProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  final _currentIndex = 3;
+class _DosenProfilePageState extends State<DosenProfilePage> {
+  final _currentIndex = 2;
 
   void _onNavTapped(int index) {
     if (index == _currentIndex) return;
 
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        Navigator.pushReplacementNamed(context, '/dosen/dashboard');
         break;
 
       case 1:
-      // nanti scan
+        Navigator.pushReplacementNamed(context, '/dosen/kelas');
         break;
 
       case 2:
-      // nanti riwayat
-        break;
-
-      case 3:
-        Navigator.pushReplacementNamed(context, '/profile');
+        Navigator.pushReplacementNamed(context, '/dosen/profile');
         break;
     }
   }
@@ -38,11 +34,10 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final user = {
-      "name": "Kelio Xenelly",
-      "email": "kelio.xenelly@itbss.ac.id",
-      "nim": "23110001",
-      "prodi": "Sistem dan Teknologi Informasi",
-      "role": "mahasiswa"
+      "name": "Eric Prakarsa Putra",
+      "email": "eric@itbss.ac.id",
+      "nidn": "10000001",
+      "role": "dosen"
     };
 
     return Scaffold(
@@ -61,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 50),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                  colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
                 ),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
@@ -78,10 +73,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       GestureDetector(
                         onTap: () {
                           if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                            } else {
-                              // Jika tidak bisa back (stack kosong), arahkan ke dashboard
-                              Navigator.pushReplacementNamed(context, '/dashboard');
+                          Navigator.of(context).pop();
+                          } else {
+                          // Jika tidak bisa back (stack kosong), arahkan ke dashboard
+                          Navigator.pushReplacementNamed(context, '/dosen/dashboard');
                           }
                         },
                         child: Container(
@@ -145,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              "NIM: ${user['nim']}",
+                              "NIDN: ${user['nidn']}",
                               style: const TextStyle(color: Colors.white),
                             ),
                           )
@@ -173,9 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _divider(),
                         _buildItem(Icons.email, "Email", user['email']!),
                         _divider(),
-                        _buildItem(Icons.badge, "NIM", user['nim']!),
-                        _divider(),
-                        _buildItem(Icons.school, "Program Studi", user['prodi']!),
+                        _buildItem(Icons.badge, "NIDN", user['nidn']!),
                         _divider(),
                         _buildItem(Icons.person_outline, "Role", user['role']!),
                       ],
@@ -198,7 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   GlassCard(
                     child: Row(
                       children: const [
-                        Icon(Icons.key, color: Colors.blue),
+                        Icon(Icons.key, color: Colors.deepPurpleAccent),
                         SizedBox(width: 10),
                         Expanded(child: Text("Ubah Password")),
                         Icon(Icons.chevron_right),
@@ -265,7 +258,7 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: Colors.blue),
+          Icon(icon, color: Colors.deepPurpleAccent),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
