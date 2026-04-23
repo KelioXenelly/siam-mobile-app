@@ -5,24 +5,93 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 
 use App\Models\Mahasiswa;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use OpenApi\Attributes as OA;
 
 class MahasiswaController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+    #[OA\Get(
+        path: "/api/mahasiswa",
+        summary: "Get all mahasiswa",
+        security: [["bearerAuth" => []]],
+        tags: ["Mahasiswa"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data mahasiswa berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Data mahasiswa berhasil diambil"),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(
+                                type: "object",
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer", example: 1),
+                                    new OA\Property(property: "user_id", type: "integer", example: 5),
+                                    new OA\Property(property: "nim", type: "string", example: "22110001"),
+                                    new OA\Property(property: "angkatan", type: "string", example: "2022"),
+                                    new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                    new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                                    new OA\Property(
+                                        property: "user",
+                                        type: "object",
+                                        properties: [
+                                            new OA\Property(property: "id", type: "integer", example: 5),
+                                            new OA\Property(property: "name", type: "string", example: "Budi Santoso"),
+                                            new OA\Property(property: "email", type: "string", example: "budi@itbss.ac.id"),
+                                            new OA\Property(property: "role", type: "string", example: "mahasiswa"),
+                                            new OA\Property(property: "email_verified_at", type: "string", example: null),
+                                            new OA\Property(property: "is_active", type: "boolean", example: true),
+                                            new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                            new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                        ]
+                                    ),
+                                    new OA\Property(
+                                        property: "prodi",
+                                        type: "object",
+                                        properties: [
+                                            new OA\Property(property: "id", type: "integer", example: 1),
+                                            new OA\Property(property: "kode_prodi", type: "string", example: "TS"),
+                                            new OA\Property(property: "nama_prodi", type: "string", example: "Teknik Sipil"),
+                                            new OA\Property(property: "jenjang", type: "string", example: "S1"),
+                                            new OA\Property(property: "is_active", type: "boolean", example: true),
+                                            new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                            new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                        ]
+                                    )
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Data mahasiswa tidak ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Data mahasiswa tidak ditemukan")
+                    ]
+                )
+            )
+        ]
+    )]
     public function index()
     {
         $mahasiswas = Mahasiswa::with('user', 'prodi')->get();
 
-        if($mahasiswas->isEmpty()) {
+        if ($mahasiswas->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'errors' => 'Data mahasiswa tidak ditemukan',
-            ]);
+            ], 404);
         }
 
         return response()->json([
@@ -41,43 +110,80 @@ class MahasiswaController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nim' => 'required|string|max:255|unique:mahasiswas,nim',
-            'prodi' => 'required|string|max:255',
-            'angkatan' => 'required|string|max:255',
-        ]);
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => 'mahasiswa',
-        ]);
-
-        $mahasiswa = Mahasiswa::create([
-            'user_id' => $user->id,
-            'nim' => $validated['nim'],
-            'prodi' => $validated['prodi'],
-            'angkatan' => $validated['angkatan'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data mahasiswa berhasil ditambahkan',
-            'data' => $mahasiswa->load('user'),
-        ], 201);
-    }
-
-    /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: "/api/mahasiswa/{id}",
+        summary: "Get specific mahasiswa details",
+        security: [["bearerAuth" => []]],
+        tags: ["Mahasiswa"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer"),
+                description: "ID of the Mahasiswa"
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data mahasiswa berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Data mahasiswa berhasil diambil"),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "id", type: "integer", example: 1),
+                                new OA\Property(property: "user_id", type: "integer", example: 5),
+                                new OA\Property(property: "nim", type: "string", example: "22110001"),
+                                new OA\Property(property: "angkatan", type: "string", example: "2022"),
+                                new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                                new OA\Property(
+                                    property: "user",
+                                    type: "object",
+                                    properties: [
+                                        new OA\Property(property: "id", type: "integer", example: 5),
+                                        new OA\Property(property: "name", type: "string", example: "Budi Santoso"),
+                                        new OA\Property(property: "email", type: "string", example: "budi@itbss.ac.id"),
+                                        new OA\Property(property: "role", type: "string", example: "mahasiswa"),
+                                        new OA\Property(property: "is_active", type: "boolean", example: true)
+                                    ]
+                                ),
+                                new OA\Property(
+                                    property: "prodi",
+                                    type: "object",
+                                    properties: [
+                                        new OA\Property(property: "id", type: "integer", example: 1),
+                                        new OA\Property(property: "kode_prodi", type: "string", example: "TS"),
+                                        new OA\Property(property: "nama_prodi", type: "string", example: "Teknik Sipil"),
+                                        new OA\Property(property: "jenjang", type: "string", example: "S1"),
+                                        new OA\Property(property: "is_active", type: "boolean", example: true),
+                                        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                        new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                    ]
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Mahasiswa not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "No query results for model [App\\Models\\Mahasiswa] 999")
+                    ]
+                )
+            )
+        ]
+    )]
     public function show($id)
     {
         $mahasiswa = Mahasiswa::with('user')->findOrFail($id);
@@ -85,65 +191,7 @@ class MahasiswaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data mahasiswa berhasil diambil',
-            'data' => $mahasiswa->load('user'),
-        ], 200);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Mahasiswa $mahasiswa)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-        $mahasiswa = Mahasiswa::findOrFail($id);
-        $user = $mahasiswa->user;
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'. $user->id,
-            'nim' => 'required|string|max:255|unique:mahasiswas,nim,' . $mahasiswa->id,
-            'prodi' => 'required|string|max:255',
-            'angkatan' => 'required|string|max:255',
-        ]);
-        
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-        ]);
-
-        $mahasiswa->update([
-            'nim' => $validated['nim'],
-            'prodi' => $validated['prodi'],
-            'angkatan' => $validated['angkatan'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data mahasiswa berhasil diubah',
-            'data' => $mahasiswa->load('user'),
-        ], 200);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-        $mahasiswa = Mahasiswa::findOrFail($id);
-
-        $mahasiswa->user()->delete();
-        $mahasiswa->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data mahasiswa berhasil dihapus',
+            'data' => $mahasiswa->load('user', 'prodi'),
         ], 200);
     }
 }

@@ -33,7 +33,14 @@ class AbsensiController extends Controller
             ], 400);
         }
 
-        // 2. cek expired (validasi expired)
+        // 2. cek expired & status closed
+        if ($sesi->is_closed) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sesi absensi sudah ditutup oleh dosen'
+            ], 400);
+        }
+
         if (Carbon::now()->greaterThan($sesi->expired_at)) {
             return response()->json([
                 'success' => false,

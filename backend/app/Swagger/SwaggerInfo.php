@@ -9,6 +9,13 @@ use OpenApi\Attributes as OA;
     description: "API documentation for SIAM System",
     title: "SIAM API Documentation"
 )]
+#[OA\SecurityScheme(
+    securityScheme: "bearerAuth",
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "JWT"
+)]
+
 class SwaggerInfo
 {
 }
