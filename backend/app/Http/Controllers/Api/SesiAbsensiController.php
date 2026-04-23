@@ -112,20 +112,20 @@ class SesiAbsensiController extends Controller
             ], 400);
         }
 
-        // 3. Kalau lolos cek di atas, baru hapus sesi lama jika ada
-        SesiAbsensi::where('pertemuan_id', $validated['pertemuan_id'])->delete();
-
+        // 3. Gunakan updateOrCreate agar data absensi mahasiswa yang sudah scan tidak hilang
         $token = Str::random(40);
 
-        $sesi = SesiAbsensi::create([
-            'pertemuan_id' => $validated['pertemuan_id'],
-            'qr_token' => $token,
-            'latitude_dosen' => $validated['latitude_dosen'],
-            'longitude_dosen' => $validated['longitude_dosen'],
-            'radius_validasi' => 50,
-            'expired_at' => Carbon::now()->addMinutes(10),
-            'is_closed' => false,
-        ]);
+        $sesi = SesiAbsensi::updateOrCreate(
+            ['pertemuan_id' => $validated['pertemuan_id']],
+            [
+                'qr_token' => $token,
+                'latitude_dosen' => $validated['latitude_dosen'],
+                'longitude_dosen' => $validated['longitude_dosen'],
+                'radius_validasi' => 50,
+                'expired_at' => Carbon::now()->addMinutes(10),
+                'is_closed' => false,
+            ]
+        );
 
         // data yang akan di-encode ke QR
         $qrData = json_encode([
@@ -308,7 +308,15 @@ class SesiAbsensiController extends Controller
                         new OA\Property(
                             property: "data",
                             type: "array",
-                            items: new OA\Items(type: "object")
+                            items: new OA\Items(
+                                type: "object",
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer", example: 1),
+                                    new OA\Property(property: "pertemuan_id", type: "integer", example: 1),
+                                    new OA\Property(property: "qr_token", type: "string", example: "abcde..."),
+                                    new OA\Property(property: "absensis_count", type: "integer", example: 25)
+                                ]
+                            )
                         )
                     ]
                 )
@@ -327,7 +335,7 @@ class SesiAbsensiController extends Controller
     )]
     public function byPertemuan($pertemuan_id)
     {
-        $sesi = SesiAbsensi::where('pertemuan_id', $pertemuan_id)
+        $sesi = SesiAbsensi::withCount('absensis')->where('pertemuan_id', $pertemuan_id)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -386,9 +394,9 @@ class SesiAbsensiController extends Controller
     public function aktif($pertemuan_id)
     {
         $sesi = SesiAbsensi::where('pertemuan_id', $pertemuan_id)
+            ->withCount('absensis')
             ->where('expired_at', '>', now())
             ->where('is_closed', false)
-            ->latest()
             ->first();
 
         if (!$sesi) {

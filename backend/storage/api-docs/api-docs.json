@@ -6,6 +6,459 @@
         "version": "1.0.0"
     },
     "paths": {
+        "/api/absensi/scan": {
+            "post": {
+                "tags": [
+                    "Absensi"
+                ],
+                "summary": "Scan QR code for attendance",
+                "description": "Allows students to record their attendance by scanning a valid QR token within the required radius.",
+                "operationId": "585acdd97d5a44e878c785c73e499755",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "latitude_mahasiswa",
+                                    "longitude_mahasiswa",
+                                    "selfie_photo"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "description": "QR token from session",
+                                        "type": "string"
+                                    },
+                                    "latitude_mahasiswa": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": -6.17511
+                                    },
+                                    "longitude_mahasiswa": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 106.86503
+                                    },
+                                    "selfie_photo": {
+                                        "description": "Student's selfie photo",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Absensi berhasil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Absensi berhasil"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 17
+                                                },
+                                                "sesi_absensi_id": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "mahasiswa_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "latitude_mahasiswa": {
+                                                    "type": "string",
+                                                    "example": "-6.17511"
+                                                },
+                                                "longitude_mahasiswa": {
+                                                    "type": "string",
+                                                    "example": "106.86503"
+                                                },
+                                                "selfie_photo": {
+                                                    "type": "string",
+                                                    "example": "selfies/1776925219_image.png"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "hadir"
+                                                },
+                                                "waktu_absen": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-04-23T06:20:19.915402Z"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-04-23T06:20:19.000000Z"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-04-23T06:20:19.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (QR Invalid/Expired/Closed/Already Absent/Out of Radius)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "QR sudah expired"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (Not registered in class)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Anda tidak terdaftar di kelas ini"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Selfie photo is required"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/absensi/riwayat": {
+            "get": {
+                "tags": [
+                    "Absensi"
+                ],
+                "summary": "Get attendance history for logged-in student",
+                "operationId": "9b424a2b84fac407514798cbc5b58da8",
+                "responses": {
+                    "200": {
+                        "description": "Riwayat absensi ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Riwayat absensi berhasil diambil"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Tidak ada riwayat",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tidak ada riwayat absensi"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/sesi/{sesi_id}/absensi": {
+            "get": {
+                "tags": [
+                    "Absensi"
+                ],
+                "summary": "Get all attendance records for a specific session",
+                "operationId": "cbdfda3604d18a121e18e956b4e1d31e",
+                "parameters": [
+                    {
+                        "name": "sesi_id",
+                        "in": "path",
+                        "description": "ID of the Sesi Absensi",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data absensi per sesi berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data absensi per sesi berhasil diambil"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Tidak ada riwayat absensi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "Tidak ada riwayat absensi"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/absensi/{absensi_id}/manual": {
+            "put": {
+                "tags": [
+                    "Absensi"
+                ],
+                "summary": "Update attendance status manually by Dosen",
+                "operationId": "2a042614751fa66f206b1bf004e0333c",
+                "parameters": [
+                    {
+                        "name": "absensi_id",
+                        "in": "path",
+                        "description": "ID of the Absensi",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "example": "hadir",
+                                        "enum": [
+                                            "hadir",
+                                            "terlambat",
+                                            "izin",
+                                            "sakit",
+                                            "alfa"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status absensi berhasil diperbarui",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Status absensi berhasil diperbarui"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Anda tidak memiliki akses untuk mengubah absensi ini",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Anda tidak memiliki akses untuk mengubah absensi ini"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Data absensi tidak ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data absensi tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The selected status is invalid."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/login": {
             "post": {
                 "tags": [
@@ -1000,6 +1453,108 @@
                                         "errors": {
                                             "type": "string",
                                             "example": "Mahasiswa/Dosen masih memiliki kelas, pengguna ini tidak bisa dihapus"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard-stats": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get statistics for admin dashboard",
+                "operationId": "89f54b0d63695a728734592692cdefe9",
+                "responses": {
+                    "200": {
+                        "description": "Statistik dashboard berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "summary": {
+                                                    "properties": {
+                                                        "total_mahasiswa": {
+                                                            "type": "integer",
+                                                            "example": 4209
+                                                        },
+                                                        "total_dosen": {
+                                                            "type": "integer",
+                                                            "example": 312
+                                                        },
+                                                        "total_kelas_aktif": {
+                                                            "type": "integer",
+                                                            "example": 184
+                                                        },
+                                                        "total_pertemuan": {
+                                                            "type": "integer",
+                                                            "example": 1024
+                                                        },
+                                                        "trends": {
+                                                            "properties": {
+                                                                "mahasiswa": {
+                                                                    "type": "string",
+                                                                    "example": "+12% from last month"
+                                                                },
+                                                                "dosen": {
+                                                                    "type": "string",
+                                                                    "example": "+4 new this semester"
+                                                                },
+                                                                "kelas": {
+                                                                    "type": "string",
+                                                                    "example": "Steady"
+                                                                },
+                                                                "pertemuan": {
+                                                                    "type": "string",
+                                                                    "example": "+8% this week"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "recent_activities": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "statistics": {
+                                                    "properties": {
+                                                        "labels": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "data": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "integer"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -2352,16 +2907,299 @@
                 ]
             }
         },
-        "/api/kelas-saya": {
+        "/api/dosen/kelas-saya": {
             "get": {
                 "tags": [
                     "Kelas"
                 ],
                 "summary": "Get kelas for the authenticated dosen",
-                "operationId": "2e0fe712b8598a215f86516f684d908c",
+                "operationId": "5020b5f86c90dce16d8c54dae5045777",
                 "responses": {
                     "200": {
                         "description": "Kelas dosen berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "kode_kelas": {
+                                                        "type": "string",
+                                                        "example": "TI-A-2023"
+                                                    },
+                                                    "semester": {
+                                                        "type": "integer",
+                                                        "example": 3
+                                                    },
+                                                    "tahun_ajaran": {
+                                                        "type": "string",
+                                                        "example": "2023/2024"
+                                                    },
+                                                    "hari": {
+                                                        "type": "string",
+                                                        "example": "Senin"
+                                                    },
+                                                    "jam_mulai": {
+                                                        "type": "string",
+                                                        "example": "08:00"
+                                                    },
+                                                    "jam_selesai": {
+                                                        "type": "string",
+                                                        "example": "10:00"
+                                                    },
+                                                    "kapasitas": {
+                                                        "type": "integer",
+                                                        "example": 30
+                                                    },
+                                                    "mata_kuliah": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            },
+                                                            "kode_mk": {
+                                                                "type": "string",
+                                                                "example": "ST001"
+                                                            },
+                                                            "nama_mk": {
+                                                                "type": "string",
+                                                                "example": "Algoritma dan Pemrograman"
+                                                            },
+                                                            "sks": {
+                                                                "type": "integer",
+                                                                "example": 3
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Data kelas tidak ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "Data kelas tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/kelas/{kelas_id}/mahasiswa": {
+            "get": {
+                "tags": [
+                    "Kelas"
+                ],
+                "summary": "Get list of mahasiswas in a specific kelas",
+                "operationId": "8a958e66c9d0890a31d75585b5df37b0",
+                "parameters": [
+                    {
+                        "name": "kelas_id",
+                        "in": "path",
+                        "description": "ID of the Kelas",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar mahasiswa berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "user_id": {
+                                                        "type": "integer",
+                                                        "example": 10
+                                                    },
+                                                    "nim": {
+                                                        "type": "string",
+                                                        "example": "23110001"
+                                                    },
+                                                    "prodi_id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "angkatan": {
+                                                        "type": "string",
+                                                        "example": "2023"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "pivot": {
+                                                        "properties": {
+                                                            "kelas_id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "mahasiswa_id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "user": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Kelio Xenelly"
+                                                            },
+                                                            "email": {
+                                                                "type": "string",
+                                                                "example": "kelio.xenelly@itbss.ac.id"
+                                                            },
+                                                            "email_verified_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "nullable": true
+                                                            },
+                                                            "role": {
+                                                                "type": "string",
+                                                                "example": "mahasiswa"
+                                                            },
+                                                            "is_active": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            },
+                                                            "updated_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Anda tidak memiliki akses ke kelas ini",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "Anda tidak memiliki akses ke kelas ini"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Kelas tidak ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "Data kelas tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/mahasiswa/kelas-saya": {
+            "get": {
+                "tags": [
+                    "Kelas"
+                ],
+                "summary": "Get kelas for the authenticated mahasiswa",
+                "operationId": "287b955e8425c797c1f40d51de8592ec",
+                "responses": {
+                    "200": {
+                        "description": "Kelas mahasiswa berhasil diambil",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -5690,7 +6528,7 @@
                                 "properties": {
                                     "pertemuan_id": {
                                         "type": "integer",
-                                        "example": 1
+                                        "example": 5
                                     },
                                     "latitude_dosen": {
                                         "type": "number",
@@ -6038,6 +6876,24 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "pertemuan_id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "qr_token": {
+                                                        "type": "string",
+                                                        "example": "abcde..."
+                                                    },
+                                                    "absensis_count": {
+                                                        "type": "integer",
+                                                        "example": 25
+                                                    }
+                                                },
                                                 "type": "object"
                                             }
                                         }
@@ -6157,12 +7013,20 @@
     },
     "tags": [
         {
+            "name": "Absensi",
+            "description": "Absensi"
+        },
+        {
             "name": "Auth",
             "description": "Auth"
         },
         {
             "name": "User",
             "description": "User"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Dosen",

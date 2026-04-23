@@ -18,14 +18,32 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  if (isLoading || !user) {
+    return (
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 relative z-20 shadow-xl">
+        <div className="h-16 flex items-center px-6 border-b border-slate-800">
+          <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+            <div className="w-8 h-8 rounded-lg bg-blue-600/50 animate-pulse"></div>
+            <div className="w-16 h-4 bg-slate-800 rounded animate-pulse"></div>
+          </div>
+        </div>
+        <div className="flex-1 py-6 px-4 space-y-2">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="h-10 bg-slate-800/50 rounded-xl w-full animate-pulse"></div>
+          ))}
+        </div>
+      </aside>
+    );
+  }
+
   const menuItems = [
-    { name: 'Dashboard', path: `/${user?.role}/dashboard`, icon: LayoutDashboard },
-    { name: 'Program Studi', path: `/${user?.role}/program-studi`, icon: GraduationCap },
-    { name: 'Ruangan', path: `/${user?.role}/ruangan`, icon: Building2 },
-    { name: 'Users', path: `/${user?.role}/users`, icon: Users },
-    { name: 'Mata Kuliah', path: `/${user?.role}/mata-kuliah`, icon: BookOpen },
-    { name: 'Kelas', path: `/${user?.role}/kelas`, icon: Building2 },
-    { name: 'Pertemuan', path: `/${user?.role}/pertemuan`, icon: Calendar },
+    { name: 'Dashboard', path: `/${user.role}/dashboard`, icon: LayoutDashboard },
+    { name: 'Program Studi', path: `/${user.role}/program-studi`, icon: GraduationCap },
+    { name: 'Ruangan', path: `/${user.role}/ruangan`, icon: Building2 },
+    { name: 'Users', path: `/${user.role}/users`, icon: Users },
+    { name: 'Mata Kuliah', path: `/${user.role}/mata-kuliah`, icon: BookOpen },
+    { name: 'Kelas', path: `/${user.role}/kelas`, icon: Building2 },
+    { name: 'Pertemuan', path: `/${user.role}/pertemuan`, icon: Calendar },
   ];
 
   const handleLogout = () => {

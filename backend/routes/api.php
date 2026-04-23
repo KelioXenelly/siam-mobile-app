@@ -20,6 +20,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/change-password', [AuthController::class, 'changePassword']); // Done
 });
 
+Route::middleware(['auth:sanctum', 'role:dosen'])->group(function () {
+    Route::post('/generate-qr', [SesiAbsensiController::class, 'generateQR']); // Done
+    Route::post('/sesi/{sesi_id}/close', [SesiAbsensiController::class, 'closeSesi']); // Done
+    Route::get('/sesi/{sesi_id}', [SesiAbsensiController::class, 'show']); // Done
+    Route::get('/sesi/{sesi_id}/absensi', [AbsensiController::class, 'bySesi']); // Done
+    Route::get('/pertemuan/{pertemuan_id}/sesi', [SesiAbsensiController::class, 'byPertemuan']); // Done
+    Route::get('/pertemuan/{pertemuan_id}/sesi-aktif', [SesiAbsensiController::class, 'aktif']); // Done
+    Route::get('/dosen/kelas-saya', [KelasController::class, 'kelasDosen']); // Done
+    Route::get('/kelas/{kelas_id}/pertemuan', [PertemuanController::class, 'byKelas']); // Done
+    Route::post('/pertemuan/{pertemuan_id}/start', [PertemuanController::class, 'start']); // Done
+    Route::post('/pertemuan/{pertemuan_id}/end', [PertemuanController::class, 'end']); // Done
+    Route::get('/kelas/{kelas_id}/mahasiswa', [KelasController::class, 'listMahasiswa']); // Done
+    Route::put('/absensi/{absensi_id}/manual', [AbsensiController::class, 'updateStatusManual']); // Done
+});
+
+Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
+    Route::post('/absensi/scan', [AbsensiController::class, 'scan']); // Done
+    Route::get('/absensi/riwayat', [AbsensiController::class, 'riwayat']); // Done
+    Route::get('/mahasiswa/kelas-saya', [KelasController::class, 'kelasMahasiswa']); // Done
+});
+
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']); // Done
 
@@ -44,23 +65,5 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
     Route::apiResource('/pertemuan', PertemuanController::class); // Done
 
-
-});
-
-Route::middleware(['auth:sanctum', 'role:dosen'])->group(function () {
-    Route::post('/generate-qr', [SesiAbsensiController::class, 'generateQR']); // Done
-    Route::post('/sesi/{sesi_id}/close', [SesiAbsensiController::class, 'closeSesi']);
-    Route::get('/sesi/{sesi_id}', [SesiAbsensiController::class, 'show']);
-    Route::get('/sesi/{sesi_id}/absensi', [AbsensiController::class, 'bySesi']);
-    Route::get('/pertemuan/{pertemuan_id}/sesi', [SesiAbsensiController::class, 'byPertemuan']);
-    Route::get('/pertemuan/{pertemuan_id}/sesi-aktif', [SesiAbsensiController::class, 'aktif']);
-    Route::get('/kelas-saya', [KelasController::class, 'kelasDosen']); // Done
-    Route::get('/kelas/{kelas_id}/pertemuan', [PertemuanController::class, 'byKelas']); // Done
-    Route::post('/pertemuan/{pertemuan_id}/start', [PertemuanController::class, 'start']); // Done
-    Route::post('/pertemuan/{pertemuan_id}/end', [PertemuanController::class, 'end']); // Done
-});
-
-Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
-    Route::post('/scan-absensi', [AbsensiController::class, 'scan']);
-    Route::get('/riwayat-absensi', [AbsensiController::class, 'riwayat']);
+    Route::get('/dashboard-stats', [AuthController::class, 'dashboardStats']); // Done
 });

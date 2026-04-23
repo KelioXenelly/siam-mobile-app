@@ -6,6 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Mahasiswa;
+use App\Models\Dosen;
+use App\Models\Kelas;
+use App\Models\Pertemuan;
+use App\Models\Absensi;
+use App\Models\ActivityLog;
+use Carbon\Carbon;
 use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
@@ -837,5 +844,129 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Pengguna berhasil dihapus',
         ], 200);
+    }
+
+    #[OA\Get(
+        path: "/api/dashboard-stats",
+        summary: "Get statistics for admin dashboard",
+        security: [["bearerAuth" => []]],
+        tags: ["Dashboard"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Statistik dashboard berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(
+                                    property: "summary",
+                                    type: "object",
+                                    properties: [
+                                        new OA\Property(property: "total_mahasiswa", type: "integer", example: 4209),
+                                        new OA\Property(property: "total_dosen", type: "integer", example: 312),
+                                        new OA\Property(property: "total_kelas_aktif", type: "integer", example: 184),
+                                        new OA\Property(property: "total_pertemuan", type: "integer", example: 1024),
+                                        new OA\Property(
+                                            property: "trends",
+                                            type: "object",
+                                            properties: [
+                                                new OA\Property(property: "mahasiswa", type: "string", example: "+12% from last month"),
+                                                new OA\Property(property: "dosen", type: "string", example: "+4 new this semester"),
+                                                new OA\Property(property: "kelas", type: "string", example: "Steady"),
+                                                new OA\Property(property: "pertemuan", type: "string", example: "+8% this week")
+                                            ]
+                                        )
+                                    ]
+                                ),
+                                new OA\Property(
+                                    property: "recent_activities",
+                                    type: "array",
+                                    items: new OA\Items(type: "object")
+                                ),
+                                new OA\Property(
+                                    property: "statistics",
+                                    type: "object",
+                                    properties: [
+                                        new OA\Property(property: "labels", type: "array", items: new OA\Items(type: "string")),
+                                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "integer"))
+                                    ]
+                                )
+                            ]
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
+    public function dashboardStats(Request $request)
+    {
+        // 1. Summary
+        $totalMahasiswa = Mahasiswa::count();
+        $totalDosen = Dosen::count();
+        $totalKelas = Kelas::count();
+        $totalPertemuan = Pertemuan::count();
+
+        // Trend Mahasiswa (Real-time calculation)
+        $thisMonth = Mahasiswa::whereMonth('created_at', Carbon::now()->month)->count();
+        $lastMonth = Mahasiswa::whereMonth('created_at', Carbon::now()->subMonth()->month)->count();
+        
+        $mahasiswaTrend = "Stabil";
+        if ($lastMonth > 0) {
+            $percent = (($thisMonth - $lastMonth) / $lastMonth) * 100;
+            $mahasiswaTrend = ($percent >= 0 ? '+' : '') . round($percent, 1) . "% from last month";
+        } elseif ($thisMonth > 0) {
+            $mahasiswaTrend = "+" . $thisMonth . " new this month";
+        }
+
+        // 2. Recent Activities
+        $recentActivities = ActivityLog::with('user')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'detail' => $log->detail,
+                    'time' => $log->created_at->diffForHumans(),
+                    'status' => $log->status,
+                ];
+            });
+
+        // 3. Attendance Statistics (Last 7 Days)
+        $labels = [];
+        $data = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $labels[] = $date->isoFormat('ddd');
+            $data[] = Absensi::whereDate('created_at', $date->toDateString())->count();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'total_mahasiswa' => $totalMahasiswa,
+                    'total_dosen' => $totalDosen,
+                    'total_kelas_aktif' => $totalKelas,
+                    'total_pertemuan' => $totalPertemuan,
+                    'trends' => [
+                        'mahasiswa' => $mahasiswaTrend,
+                        'dosen' => "+0 new this semester", 
+                        'kelas' => "Steady",
+                        'pertemuan' => "+0% this week"
+                    ]
+                ],
+                'recent_activities' => $recentActivities,
+                'statistics' => [
+                    'labels' => $labels,
+                    'data' => $data
+                ]
+            ]
+        ]);
     }
 }
