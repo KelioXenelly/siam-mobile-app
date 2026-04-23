@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import api from "~/lib/api";
 import AuthGuard from "~/components/auth_guard";
 import { 
   Users, 
@@ -7,88 +9,86 @@ import {
   MoreVertical,
   ArrowUpRight,
   TrendingUp,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import type { Activity } from "~/types/activity";
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get('/dashboard-stats');
+        if (response.data.success) {
+          setStats(response.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <AuthGuard>
+        <div className="flex items-center justify-center min-h-[60vh] w-full">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+            <p className="text-slate-500 font-medium">Memuat data dashboard...</p>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
 
   const summaryCards = [
     {
       title: "Total Mahasiswa",
-      value: "4,209",
+      value: stats?.summary?.total_mahasiswa?.toLocaleString() || "0",
       icon: Users,
       color: "bg-blue-500 text-white",
-      trend: "+12% from last month",
+      trend: stats?.summary?.trends?.mahasiswa || "Stabil",
       trendIcon: TrendingUp,
       trendColor: "text-emerald-500",
     },
     {
       title: "Total Dosen",
-      value: "312",
+      value: stats?.summary?.total_dosen?.toLocaleString() || "0",
       icon: GraduationCap,
       color: "bg-indigo-500 text-white",
-      trend: "+4 new this semester",
+      trend: stats?.summary?.trends?.dosen || "Steady",
       trendIcon: ArrowUpRight,
       trendColor: "text-blue-500",
     },
     {
       title: "Total Kelas Aktif",
-      value: "184",
+      value: stats?.summary?.total_kelas_aktif?.toLocaleString() || "0",
       icon: Building2,
       color: "bg-emerald-500 text-white",
-      trend: "Steady",
+      trend: stats?.summary?.trends?.kelas || "Steady",
       trendIcon: TrendingUp,
       trendColor: "text-slate-400",
     },
     {
       title: "Total Pertemuan",
-      value: "1,024",
+      value: stats?.summary?.total_pertemuan?.toLocaleString() || "0",
       icon: Calendar,
       color: "bg-violet-500 text-white",
-      trend: "+8% this week",
+      trend: stats?.summary?.trends?.pertemuan || "Steady",
       trendIcon: ArrowUpRight,
       trendColor: "text-emerald-500",
     },
   ];
 
-  const recentActivity = [
-    {
-      id: 1,
-      action: "Dosen Dr. Budi mengupdate absen",
-      detail: "Kelas Pemrograman Web A - Pertemuan 4",
-      time: "10 mins ago",
-      status: "success",
-    },
-    {
-      id: 2,
-      action: "Mahasiswa baru ditambahkan",
-      detail: "NIM 24001 - Andi Setiawan (Teknik Informatika)",
-      time: "2 hours ago",
-      status: "info",
-    },
-    {
-      id: 3,
-      action: "Pertemuan dibuat",
-      detail: "Kelas Struktur Data B - Pertemuan 1",
-      time: "3 hours ago",
-      status: "success",
-    },
-    {
-      id: 4,
-      action: "Dosen gagal scan QR",
-      detail: "Sistem mengalami timeout selama 2 detik",
-      time: "1 day ago",
-      status: "warning",
-    },
-    {
-      id: 5,
-      action: "Data Kelas diimpor",
-      detail: "30 kelas baru ditambahkan via CSV",
-      time: "2 days ago",
-      status: "info",
-    },
-  ];
+  const recentActivity: Activity[] = stats?.recent_activities || [];
 
   return (
     <AuthGuard>
@@ -160,22 +160,28 @@ export default function DashboardPage() {
               <div className="text-center">
                 <TrendingUp className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-slate-400 font-medium">
-                  Chart Visualization Area
+                  Statistik Kehadiran 7 Hari Terakhir
                 </p>
                 <p className="text-slate-400 text-sm mt-1">
-                  Implement with Recharts
+                  Data diperbarui secara real-time
                 </p>
               </div>
 
-              {/* Mock chart bars just for aesthetics */}
+              {/* Dynamic chart bars from backend */}
               <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-12 gap-4 h-32 opacity-20 pointer-events-none">
-                {[40, 70, 45, 90, 65, 85, 50].map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-full bg-blue-500 rounded-t-sm"
-                    style={{ height: `${h}%` }}
-                  ></div>
-                ))}
+                {stats?.statistics?.data?.map((val: number, i: number) => {
+                  // Calculate height relative to max value for aesthetics
+                  const max = Math.max(...stats.statistics.data, 10);
+                  const height = (val / max) * 100;
+                  return (
+                    <div
+                      key={i}
+                      className="w-full bg-blue-500 rounded-t-sm transition-all duration-500"
+                      style={{ height: `${Math.max(height, 5)}%` }}
+                      title={`${stats.statistics.labels[i]}: ${val}`}
+                    ></div>
+                  );
+                })}
               </div>
             </div>
           </motion.div>
@@ -198,7 +204,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-5 relative">
               <div className="absolute left-3.5 top-2 bottom-2 w-px bg-slate-100" />
 
-              {recentActivity.map((activity, idx) => (
+              {recentActivity.map((activity: Activity, idx: number) => (
                 <div
                   key={activity.id}
                   className="flex gap-4 relative z-10 group"
