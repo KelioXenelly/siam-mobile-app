@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             KelasMahasiswaSeeder::class,
             PertemuanSeeder::class,
             ActivityLogSeeder::class,
+            AbsensiSeeder::class,
         ]);
     }
 }
