@@ -35,7 +35,7 @@ export default function Navbar() {
       <h1 className="text-xl font-semibold text-slate-800">{getPageTitle()}</h1>
 
       <div className="flex items-center gap-6 relative">
-        <div className="relative hidden md:block">
+        {/* <div className="relative hidden md:block">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -47,9 +47,9 @@ export default function Navbar() {
         <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
+        </button> */}
 
-        <div className="h-8 w-px bg-slate-200"></div>
+        {/* <div className="h-8 w-px bg-slate-200"></div> */}
 
         <button
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"

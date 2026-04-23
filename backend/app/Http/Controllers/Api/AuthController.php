@@ -904,13 +904,15 @@ class AuthController extends Controller
     )]
     public function dashboardStats(Request $request)
     {
+        $range = $request->query('range', '7days');
+
         // 1. Summary
         $totalMahasiswa = Mahasiswa::count();
         $totalDosen = Dosen::count();
         $totalKelas = Kelas::count();
         $totalPertemuan = Pertemuan::count();
 
-        // Trend Mahasiswa (Real-time calculation)
+        // Trend Mahasiswa
         $thisMonth = Mahasiswa::whereMonth('created_at', Carbon::now()->month)->count();
         $lastMonth = Mahasiswa::whereMonth('created_at', Carbon::now()->subMonth()->month)->count();
         
@@ -937,13 +939,37 @@ class AuthController extends Controller
                 ];
             });
 
-        // 3. Attendance Statistics (Last 7 Days)
+        // 3. Attendance Statistics based on range
         $labels = [];
         $data = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
-            $labels[] = $date->isoFormat('ddd');
-            $data[] = Absensi::whereDate('created_at', $date->toDateString())->count();
+
+        if ($range === 'month') {
+            // Last 30 days
+            for ($i = 29; $i >= 0; $i--) {
+                $date = Carbon::now()->subDays($i);
+                if ($i % 5 === 0) {
+                    $labels[] = $date->format('d M');
+                } else {
+                    $labels[] = ''; // Empty labels for cleaner look on mobile
+                }
+                $data[] = Absensi::whereDate('created_at', $date->toDateString())->count();
+            }
+        } elseif ($range === 'semester') {
+            // Last 6 months
+            for ($i = 5; $i >= 0; $i--) {
+                $date = Carbon::now()->subMonths($i);
+                $labels[] = $date->format('M');
+                $data[] = Absensi::whereMonth('created_at', $date->month)
+                    ->whereYear('created_at', $date->year)
+                    ->count();
+            }
+        } else {
+            // Default 7 days
+            for ($i = 6; $i >= 0; $i--) {
+                $date = Carbon::now()->subDays($i);
+                $labels[] = $date->isoFormat('ddd');
+                $data[] = Absensi::whereDate('created_at', $date->toDateString())->count();
+            }
         }
 
         return response()->json([
