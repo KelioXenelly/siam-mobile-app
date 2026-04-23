@@ -15,11 +15,13 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!in_array($request->user()->role, $roles)) {
+        $user = $request->user();
+
+        if (!$user || !in_array($user->role, $roles)) {
             return response()->json([
                 'message' => 'Akses ditolak'
             ], 403);
-        }    
+        }
 
         return $next($request);
     }

@@ -13,6 +13,7 @@ import {
 import api from "~/lib/api";
 import { setToken } from "~/lib/auth";
 import { toast } from "sonner";
+import { useAuth } from "~/context/auth_context";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +53,7 @@ export default function LoginPage() {
 
       if(user.role == "admin") {
         setToken(token);
+        await refreshUser();
         toast.success(res.data.message || "Login berhasil");
         navigate('/admin/dashboard');
       }

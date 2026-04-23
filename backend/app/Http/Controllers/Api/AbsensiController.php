@@ -8,9 +8,92 @@ use App\Models\Absensi;
 use App\Models\SesiAbsensi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 
 class AbsensiController extends Controller
 {
+
+    #[OA\Post(
+        path: "/api/absensi/scan",
+        summary: "Scan QR code for attendance",
+        description: "Allows students to record their attendance by scanning a valid QR token within the required radius.",
+        security: [["bearerAuth" => []]],
+        tags: ["Absensi"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    required: ["token", "latitude_mahasiswa", "longitude_mahasiswa", "selfie_photo"],
+                    properties: [
+                        new OA\Property(property: "token", type: "string", description: "QR token from session"),
+                        new OA\Property(property: "latitude_mahasiswa", type: "number", format: "float", example: -6.17511),
+                        new OA\Property(property: "longitude_mahasiswa", type: "number", format: "float", example: 106.86503),
+                        new OA\Property(property: "selfie_photo", type: "string", format: "binary", description: "Student's selfie photo")
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Absensi berhasil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Absensi berhasil"),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "id", type: "integer", example: 17),
+                                new OA\Property(property: "sesi_absensi_id", type: "integer", example: 3),
+                                new OA\Property(property: "mahasiswa_id", type: "integer", example: 1),
+                                new OA\Property(property: "latitude_mahasiswa", type: "string", example: "-6.17511"),
+                                new OA\Property(property: "longitude_mahasiswa", type: "string", example: "106.86503"),
+                                new OA\Property(property: "selfie_photo", type: "string", example: "selfies/1776925219_image.png"),
+                                new OA\Property(property: "status", type: "string", example: "hadir"),
+                                new OA\Property(property: "waktu_absen", type: "string", format: "date-time", example: "2026-04-23T06:20:19.915402Z"),
+                                new OA\Property(property: "created_at", type: "string", format: "date-time", example: "2026-04-23T06:20:19.000000Z"),
+                                new OA\Property(property: "updated_at", type: "string", format: "date-time", example: "2026-04-23T06:20:19.000000Z")
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: "Bad Request (QR Invalid/Expired/Closed/Already Absent/Out of Radius)",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "QR sudah expired")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden (Not registered in class)",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "Anda tidak terdaftar di kelas ini")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation Error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "Selfie photo is required")
+                    ]
+                )
+            )
+        ]
+    )]
     public function scan(Request $request)
     {
         $validated = $request->validate([
@@ -84,7 +167,7 @@ class AbsensiController extends Controller
 
         if ($distance > $sesi->radius_validasi) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Di luar radius',
                 'distance' => round($distance, 2) . ' meter',
             ], 400);
@@ -98,36 +181,33 @@ class AbsensiController extends Controller
             $status = 'terlambat';
         }
 
-        // 7. upload selfie
-        if ($request->hasFile('selfie_photo')) {
-            $file = $request->file('selfie_photo');
+        return DB::transaction(function () use ($request, $sesi, $mahasiswa, $validated, $status) {
+            // 7. upload selfie
+            if ($request->hasFile('selfie_photo')) {
+                $file = $request->file('selfie_photo');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('selfies', $filename, 'public');
+            } else {
+                throw new \Exception('Selfie wajib diupload');
+            }
 
-            $filename = time() . '_' . $file->getClientOriginalName();
+            // 8. simpan absensi
+            $absensi = Absensi::create([
+                'sesi_absensi_id' => $sesi->id,
+                'mahasiswa_id' => $mahasiswa->id,
+                'latitude_mahasiswa' => $validated['latitude_mahasiswa'],
+                'longitude_mahasiswa' => $validated['longitude_mahasiswa'],
+                'selfie_photo' => $path,
+                'status' => $status,
+                'waktu_absen' => Carbon::now(),
+            ]);
 
-            $path = $file->storeAs('selfies', $filename, 'public');
-        } else {
             return response()->json([
-                'success' => false,
-                'message' => 'Selfie wajib diupload'
-            ], 400);
-        }
-
-        // 8. simpan absensi
-        $absensi = Absensi::create([
-            'sesi_absensi_id' => $sesi->id,
-            'mahasiswa_id' => $mahasiswa->id,
-            'latitude_mahasiswa' => $validated['latitude_mahasiswa'],
-            'longitude_mahasiswa' => $validated['longitude_mahasiswa'],
-            'selfie_photo' => $path,
-            'status' => $status,
-            'waktu_absen' => Carbon::now(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Absensi berhasil',
-            'data' => $absensi
-        ], 201);
+                'success' => true,
+                'message' => 'Absensi berhasil',
+                'data' => $absensi
+            ], 201);
+        });
     }
 
     // fungsi hitung jarak (meter)
@@ -138,24 +218,61 @@ class AbsensiController extends Controller
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
-        $a = sin($dLat/2) * sin($dLat/2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLon/2) * sin($dLon/2);
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
 
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earth * $c;
     }
 
+    #[OA\Get(
+        path: "/api/absensi/riwayat",
+        summary: "Get attendance history for logged-in student",
+        security: [["bearerAuth" => []]],
+        tags: ["Absensi"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Riwayat absensi ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Riwayat absensi berhasil diambil"),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Tidak ada riwayat",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "Tidak ada riwayat absensi")
+                    ]
+                )
+            )
+        ]
+    )]
     public function riwayat(Request $request)
     {
         $mahasiswa = $request->user()->mahasiswa;
 
-        $absensi = Absensi::with('sesiAbsensi.pertemuan.kelas')
+        if (!$mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data mahasiswa tidak ditemukan',
+            ], 404);
+        }
+
+        $absensi = Absensi::with(['sesiAbsensi.pertemuan.kelas.mataKuliah', 'sesiAbsensi.pertemuan.kelas'])
             ->where('mahasiswa_id', $mahasiswa->id)
+            ->latest()
             ->get();
 
-        if($absensi->isEmpty()) {
+        if ($absensi->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak ada riwayat absensi',
@@ -164,25 +281,172 @@ class AbsensiController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => 'Riwayat absensi berhasil diambil',
             'data' => $absensi
         ], 200);
     }
 
-    public function bySesi($sesi_id) {
+
+    #[OA\Get(
+        path: "/api/sesi/{sesi_id}/absensi",
+        summary: "Get all attendance records for a specific session",
+        security: [["bearerAuth" => []]],
+        tags: ["Absensi"],
+        parameters: [
+            new OA\Parameter(
+                name: "sesi_id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer"),
+                description: "ID of the Sesi Absensi"
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data absensi per sesi berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Data absensi per sesi berhasil diambil"),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(type: "object")
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Tidak ada riwayat absensi",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Tidak ada riwayat absensi")
+                    ]
+                )
+            )
+        ]
+    )]
+    public function bySesi($sesi_id)
+    {
         $absensi = Absensi::with('mahasiswa.user')
             ->where('sesi_absensi_id', $sesi_id)
             ->get();
 
-        if($absensi->isEmpty()) {
+        if ($absensi->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tidak ada riwayat absensi',
+                'errors' => 'Tidak ada riwayat absensi',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Data absensi per sesi berhasil diambil',
+            'data' => $absensi
+        ], 200);
+    }
+
+    #[OA\Put(
+        path: "/api/absensi/{absensi_id}/manual",
+        summary: "Update attendance status manually by Dosen",
+        security: [["bearerAuth" => []]],
+        tags: ["Absensi"],
+        parameters: [
+            new OA\Parameter(
+                name: "absensi_id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer"),
+                description: "ID of the Absensi"
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["status"],
+                properties: [
+                    new OA\Property(property: "status", type: "string", enum: ["hadir", "terlambat", "izin", "sakit", "alfa"], example: "hadir"),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Status absensi berhasil diperbarui",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Status absensi berhasil diperbarui"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Anda tidak memiliki akses untuk mengubah absensi ini",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "Anda tidak memiliki akses untuk mengubah absensi ini")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Data absensi tidak ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "Data absensi tidak ditemukan")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation Error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "message", type: "string", example: "The selected status is invalid.")
+                    ]
+                )
+            )
+        ]
+    )]
+    public function updateStatusManual(Request $request, $absensi_id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:hadir,terlambat,izin,sakit,alfa'
+        ]);
+
+        $dosen = $request->user()->dosen;
+        $absensi = Absensi::with('sesiAbsensi.pertemuan.kelas')->find($absensi_id);
+
+        if (!$absensi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data absensi tidak ditemukan'
+            ], 404);
+        }
+
+        // Cek apakah dosen pengampu kelas tersebut
+        if ($absensi->sesiAbsensi->pertemuan->kelas->dosen_id !== $dosen->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses untuk mengubah absensi ini'
+            ], 403);
+        }
+
+        $absensi->update([
+            'status' => $validated['status']
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status absensi berhasil diperbarui',
             'data' => $absensi
         ], 200);
     }

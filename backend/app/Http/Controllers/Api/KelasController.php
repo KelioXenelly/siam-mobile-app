@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Kelas;
 use Carbon\Carbon;
+use Carbon\Constants\UnitValue;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -301,16 +302,16 @@ class KelasController extends Controller
 
         // 🔥 MAP HARI → CARBON
         $hariMap = [
-            'Senin' => Carbon::MONDAY,
-            'Selasa' => Carbon::TUESDAY,
-            'Rabu' => Carbon::WEDNESDAY,
-            'Kamis' => Carbon::THURSDAY,
-            'Jumat' => Carbon::FRIDAY,
-            'Sabtu' => Carbon::SATURDAY,
-            'Minggu' => Carbon::SUNDAY,
+            'Senin' => UnitValue::MONDAY,
+            'Selasa' => UnitValue::TUESDAY,
+            'Rabu' => UnitValue::WEDNESDAY,
+            'Kamis' => UnitValue::THURSDAY,
+            'Jumat' => UnitValue::FRIDAY,
+            'Sabtu' => UnitValue::SATURDAY,
+            'Minggu' => UnitValue::SUNDAY,
         ];
 
-        $targetDay = $hariMap[$kelas->hari] ?? Carbon::MONDAY;
+        $targetDay = $hariMap[$kelas->hari] ?? UnitValue::MONDAY;
 
         $startDate = Carbon::now()->startOfWeek();
 
@@ -773,7 +774,7 @@ class KelasController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/kelas-saya",
+        path: "/api/dosen/kelas-saya",
         summary: "Get kelas for the authenticated dosen",
         security: [["bearerAuth" => []]],
         tags: ["Kelas"],
@@ -831,6 +832,195 @@ class KelasController extends Controller
         $dosen = $request->user()->dosen;
 
         $kelas = Kelas::where('dosen_id', $dosen->id)
+            ->with('mataKuliah')
+            ->get();
+
+        if ($kelas->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Data kelas tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $kelas
+        ], 200);
+    }
+
+    #[OA\Get(
+        path: "/api/kelas/{kelas_id}/mahasiswa",
+        summary: "Get list of mahasiswas in a specific kelas",
+        security: [["bearerAuth" => []]],
+        tags: ["Kelas"],
+        parameters: [
+            new OA\Parameter(
+                name: "kelas_id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer"),
+                description: "ID of the Kelas"
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Daftar mahasiswa berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(
+                                type: "object",
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer", example: 1),
+                                    new OA\Property(property: "user_id", type: "integer", example: 10),
+                                    new OA\Property(property: "nim", type: "string", example: "23110001"),
+                                    new OA\Property(property: "prodi_id", type: "integer", example: 1),
+                                    new OA\Property(property: "angkatan", type: "string", example: "2023"),
+                                    new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                    new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                                    new OA\Property(
+                                        property: "pivot",
+                                        type: "object",
+                                        properties: [
+                                            new OA\Property(property: "kelas_id", type: "integer", example: 1),
+                                            new OA\Property(property: "mahasiswa_id", type: "integer", example: 1)
+                                        ]
+                                    ),
+                                    new OA\Property(
+                                        property: "user",
+                                        type: "object",
+                                        properties: [
+                                            new OA\Property(property: "id", type: "integer", example: 10),
+                                            new OA\Property(property: "name", type: "string", example: "Kelio Xenelly"),
+                                            new OA\Property(property: "email", type: "string", example: "kelio.xenelly@itbss.ac.id"),
+                                            new OA\Property(property: "email_verified_at", type: "string", format: "date-time", nullable: true),
+                                            new OA\Property(property: "role", type: "string", example: "mahasiswa"),
+                                            new OA\Property(property: "is_active", type: "integer", example: 1),
+                                            new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                            new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                        ]
+                                    )
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Anda tidak memiliki akses ke kelas ini",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Anda tidak memiliki akses ke kelas ini")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Kelas tidak ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Data kelas tidak ditemukan")
+                    ]
+                )
+            )
+        ]
+    )]
+    public function listMahasiswa(Request $request, $kelas_id)
+    {
+        $dosen = $request->user()->dosen;
+
+        $kelas = Kelas::find($kelas_id);
+
+        if (!$kelas) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Data kelas tidak ditemukan'
+            ], 404);
+        }
+
+        if ($kelas->dosen_id !== $dosen->id) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Anda tidak memiliki akses ke kelas ini'
+            ], 403);
+        }
+
+        $kelas->load('mahasiswas.user');
+
+        return response()->json([
+            'success' => true,
+            'data' => $kelas->mahasiswas
+        ], 200);
+    }
+
+    #[OA\Get(
+        path: "/api/mahasiswa/kelas-saya",
+        summary: "Get kelas for the authenticated mahasiswa",
+        security: [["bearerAuth" => []]],
+        tags: ["Kelas"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Kelas mahasiswa berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(
+                                type: "object",
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer", example: 1),
+                                    new OA\Property(property: "kode_kelas", type: "string", example: "TI-A-2023"),
+                                    new OA\Property(property: "semester", type: "integer", example: 3),
+                                    new OA\Property(property: "tahun_ajaran", type: "string", example: "2023/2024"),
+                                    new OA\Property(property: "hari", type: "string", example: "Senin"),
+                                    new OA\Property(property: "jam_mulai", type: "string", example: "08:00"),
+                                    new OA\Property(property: "jam_selesai", type: "string", example: "10:00"),
+                                    new OA\Property(property: "kapasitas", type: "integer", example: 30),
+                                    new OA\Property(
+                                        property: "mata_kuliah",
+                                        type: "object",
+                                        properties: [
+                                            new OA\Property(property: "id", type: "integer", example: 2),
+                                            new OA\Property(property: "kode_mk", type: "string", example: "ST001"),
+                                            new OA\Property(property: "nama_mk", type: "string", example: "Algoritma dan Pemrograman"),
+                                            new OA\Property(property: "sks", type: "integer", example: 3)
+                                        ]
+                                    )
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Data kelas tidak ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Data kelas tidak ditemukan")
+                    ]
+                )
+            )
+        ]
+    )]
+    public function kelasMahasiswa(Request $request)
+    {
+        $mahasiswa = $request->user()->mahasiswa;
+
+        $kelas = Kelas::whereHas('mahasiswas', function ($query) use ($mahasiswa) {
+            $query->where('mahasiswa_id', $mahasiswa->id);
+        })
             ->with('mataKuliah')
             ->get();
 
