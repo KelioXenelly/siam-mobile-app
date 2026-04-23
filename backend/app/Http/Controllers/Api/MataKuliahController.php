@@ -6,21 +6,73 @@ use App\Http\Controllers\Controller;
 
 use App\Models\MataKuliah;
 use Illuminate\Http\Request;
+use OpenApi\Attributes as OA;
 
 class MataKuliahController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+        path: "/api/mata-kuliah",
+        summary: "Mendapatkan semua data mata kuliah",
+        tags: ["Mata Kuliah"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Daftar Mata Kuliah",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: true),
+                new OA\Property(property: "message", type: "string", example: "Data mata kuliah berhasil diambil"),
+                new OA\Property(
+                    property: "data",
+                    type: "array",
+                    items: new OA\Items(
+                        type: "object",
+                        properties: [
+                            new OA\Property(property: "id", type: "integer"),
+                            new OA\Property(property: "kode_mk", type: "string"),
+                            new OA\Property(property: "nama_mk", type: "string"),
+                            new OA\Property(property: "sks", type: "integer"),
+                            new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                            new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                        ]
+                    ),
+                    example: [
+                        [
+                            "id" => 1,
+                            "kode_mk" => "ST001",
+                            "nama_mk" => "Pengantar TI",
+                            "sks" => 3,
+                            "created_at" => "2026-04-20T10:10:33.000000Z",
+                            "updated_at" => "2026-04-20T10:10:33.000000Z",
+                        ]
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "Data mata kuliah tidak ditemukan",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: false),
+                new OA\Property(property: "errors", type: "string", example: "Data mata kuliah tidak ditemukan")
+            ]
+        )
+    )]
     public function index()
     {
-        $mataKuliahs = MataKuliah::with('kelas')->orderBy('kode_mk', 'asc')->get();
+        $mataKuliahs = MataKuliah::orderBy('kode_mk', 'asc')->get();
 
         if ($mataKuliahs->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mata kuliah tidak ditemukan',
-            ]);
+                'errors' => 'Data mata kuliah tidak ditemukan',
+            ], 404);
         }
 
         return response()->json([
@@ -41,6 +93,65 @@ class MataKuliahController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: "/api/mata-kuliah",
+        summary: "Menambahkan mata kuliah baru",
+        tags: ["Mata Kuliah"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["kode_mk", "nama_mk", "sks"],
+            properties: [
+                new OA\Property(property: "kode_mk", type: "string", example: "ST005"),
+                new OA\Property(property: "nama_mk", type: "string", example: "Kecerdasan Buatan"),
+                new OA\Property(property: "sks", type: "integer", example: 3)
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: "Mata kuliah berhasil ditambahkan",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: true),
+                new OA\Property(property: "message", type: "string", example: "Mata kuliah berhasil ditambahkan"),
+                new OA\Property(
+                    property: "data",
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "id", type: "integer", example: 1),
+                        new OA\Property(property: "kode_mk", type: "string", example: "ST005"),
+                        new OA\Property(property: "nama_mk", type: "string", example: "Kecerdasan Buatan"),
+                        new OA\Property(property: "sks", type: "integer", example: 3),
+                        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                        new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 422,
+        description: "Validasi gagal (Kode MK sudah terdaftar)",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "The given data was invalid."),
+                new OA\Property(
+                    property: "errors",
+                    type: "object",
+                    properties: [
+                        new OA\Property(
+                            property: "kode_mk",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "Kode mk sudah terdaftar.")
+                        )
+                    ]
+                )
+            ]
+        )
+    )]
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -65,6 +176,49 @@ class MataKuliahController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: "/api/mata-kuliah/{id}",
+        summary: "Mendapatkan detail mata kuliah",
+        tags: ["Mata Kuliah"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "integer", example: 1)
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Mata kuliah ditemukan",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: true),
+                new OA\Property(property: "message", type: "string", example: "Mata kuliah ditemukan"),
+                new OA\Property(
+                    property: "data",
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "id", type: "integer", example: 1),
+                        new OA\Property(property: "kode_mk", type: "string", example: "CS101"),
+                        new OA\Property(property: "nama_mk", type: "string", example: "Struktur Data"),
+                        new OA\Property(property: "sks", type: "integer", example: 3),
+                        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "Mata kuliah tidak ditemukan",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Record not found.")
+            ]
+        )
+    )]
     public function show($id)
     {
         $mataKuliah = MataKuliah::findOrFail($id);
@@ -72,7 +226,7 @@ class MataKuliahController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Mata kuliah ditemukan',
-            'data' => $mataKuliah->load('kelas'),
+            'data' => $mataKuliah,
         ], 200);
     }
 
@@ -87,6 +241,80 @@ class MataKuliahController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+        path: "/api/mata-kuliah/{id}",
+        summary: "Memperbarui data mata kuliah",
+        tags: ["Mata Kuliah"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "integer", example: 1)
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["kode_mk", "nama_mk", "sks"],
+            properties: [
+                new OA\Property(property: "kode_mk", type: "string", example: "ST006"),
+                new OA\Property(property: "nama_mk", type: "string", example: "Jaringan Komputer"),
+                new OA\Property(property: "sks", type: "integer", example: 3)
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Mata kuliah berhasil diubah",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: true),
+                new OA\Property(property: "message", type: "string", example: "Mata kuliah berhasil diubah"),
+                new OA\Property(
+                    property: "data",
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "id", type: "integer", example: 1),
+                        new OA\Property(property: "kode_mk", type: "string", example: "ST006"),
+                        new OA\Property(property: "nama_mk", type: "string", example: "Jaringan Komputer"),
+                        new OA\Property(property: "sks", type: "integer", example: 3),
+                        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "Mata kuliah tidak ditemukan",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Record not found.")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 422,
+        description: "Validasi gagal (Kode MK sudah terdaftar)",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "The given data was invalid."),
+                new OA\Property(
+                    property: "errors",
+                    type: "object",
+                    properties: [
+                        new OA\Property(
+                            property: "kode_mk",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "Kode mk sudah terdaftar.")
+                        )
+                    ]
+                )
+            ]
+        )
+    )]
     public function update(Request $request, $id)
     {
         $mataKuliah = MataKuliah::findOrFail($id);
@@ -106,18 +334,59 @@ class MataKuliahController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Mata kuliah berhasil diubah',
-            'data' => $mataKuliah->load('kelas'),
+            'data' => $mataKuliah,
         ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+        path: "/api/mata-kuliah/{id}",
+        summary: "Menghapus data mata kuliah",
+        tags: ["Mata Kuliah"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "integer", example: 1)
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Mata kuliah berhasil dihapus",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: true),
+                new OA\Property(property: "message", type: "string", example: "Mata kuliah berhasil dihapus")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "Mata kuliah tidak ditemukan",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Record not found.")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Mata kuliah masih memiliki kelas, sehingga tidak bisa dihapus",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "success", type: "boolean", example: false),
+                new OA\Property(property: "errors", type: "string", example: "Mata kuliah masih memiliki kelas, sehingga tidak bisa dihapus")
+            ]
+        )
+    )]
     public function destroy($id)
     {
         $mataKuliah = MataKuliah::findOrFail($id);
 
-        if($mataKuliah->kelas()->exists()) {
+        if ($mataKuliah->kelas()->exists()) {
             return response()->json([
                 'success' => false,
                 'errors' => 'Mata kuliah masih memiliki kelas, sehingga tidak bisa dihapus',

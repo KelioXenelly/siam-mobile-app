@@ -5,15 +5,69 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 
 use App\Models\Dosen;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use OpenApi\Attributes as OA;
 
 class DosenController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+        path: "/api/dosen",
+        summary: "Get all dosen",
+        security: [["bearerAuth" => []]],
+        tags: ["Dosen"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data dosen berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Data dosen berhasil diambil"),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(
+                                type: "object",
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer", example: 1),
+                                    new OA\Property(property: "user_id", type: "integer", example: 5),
+                                    new OA\Property(property: "nidn", type: "string", example: "22110001"),
+                                    new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                    new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                                    new OA\Property(
+                                        property: "user",
+                                        type: "object",
+                                        properties: [
+                                            new OA\Property(property: "id", type: "integer", example: 5),
+                                            new OA\Property(property: "name", type: "string", example: "Budi Santoso"),
+                                            new OA\Property(property: "email", type: "string", example: "budi@itbss.ac.id"),
+                                            new OA\Property(property: "role", type: "string", example: "dosen"),
+                                            new OA\Property(property: "email_verified_at", type: "string", example: null),
+                                            new OA\Property(property: "is_active", type: "boolean", example: true),
+                                            new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                            new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                        ]
+                                    )
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Data dosen tidak ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Data dosen tidak ditemukan")
+                    ]
+                )
+            )
+        ]
+    )]
     public function index()
     {
         $dosens = Dosen::with('user')->get();
@@ -33,47 +87,70 @@ class DosenController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'nidn' => 'required|unique:dosens,nidn',
-        ]);
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => 'dosen',
-        ]);
-
-        $dosen = Dosen::create([
-            'user_id' => $user->id,
-            'nidn' => $validated['nidn'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data dosen berhasil ditambahkan',
-            'data' => $dosen->load('user'),
-        ], 201);
-    }
-
-    /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: "/api/dosen/{id}",
+        summary: "Get specific dosen details",
+        security: [["bearerAuth" => []]],
+        tags: ["Dosen"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer"),
+                description: "ID of the Dosen"
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data dosen berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Data dosen berhasil diambil"),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "id", type: "integer", example: 1),
+                                new OA\Property(property: "user_id", type: "integer", example: 5),
+                                new OA\Property(property: "nidn", type: "string", example: "22110001"),
+                                new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                                new OA\Property(
+                                    property: "user",
+                                    type: "object",
+                                    properties: [
+                                        new OA\Property(property: "id", type: "integer", example: 5),
+                                        new OA\Property(property: "name", type: "string", example: "Budi Santoso"),
+                                        new OA\Property(property: "email", type: "string", example: "budi@itbss.ac.id"),
+                                        new OA\Property(property: "role", type: "string", example: "dosen"),
+                                        new OA\Property(property: "email_verified_at", type: "string", example: null),
+                                        new OA\Property(property: "is_active", type: "boolean", example: true),
+                                        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                        new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                    ]
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Data dosen tidak ditemukan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: false),
+                        new OA\Property(property: "errors", type: "string", example: "Data dosen tidak ditemukan")
+                    ]
+                )
+            )
+        ]
+    )]
     public function show($id)
     {
         $dosen = Dosen::with('user')->findOrFail($id);
@@ -83,59 +160,5 @@ class DosenController extends Controller
             'message' => 'Data dosen berhasil diambil',
             'data' => $dosen->load('user'),
         ], 200);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Dosen $dosen)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-        $dosen = Dosen::findOrFail($id);
-        $user = $dosen->user;
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'nidn' => 'required|unique:dosens,nidn,' . $dosen->id,
-        ]);
-
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-        ]);
-
-        $dosen->update([
-            'nidn' => $validated['nidn'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data dosen berhasil diubah',
-            'data' => $dosen->load('user'),
-        ], 200);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-        $dosen = Dosen::findOrFail($id);
-
-        $dosen->user()->delete();
-        $dosen->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data dosen berhasil dihapus',
-        ]);
     }
 }

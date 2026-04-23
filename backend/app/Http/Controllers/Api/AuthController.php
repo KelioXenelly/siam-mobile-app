@@ -20,8 +20,8 @@ class AuthController extends Controller
         content: new OA\JsonContent(
             required: ["identifier", "password"],
             properties: [
-                new OA\Property(property: "identifier", description: "Email, NIM, atau NIDN", type: "string", example: "23110001 / eric@itbss.ac.id / 0012345678"),
-                new OA\Property(property: "password", type: "string", example: "password123")
+                new OA\Property(property: "identifier", description: "Email, NIM, atau NIDN", type: "string", example: "23110001 / eric@itbss.ac.id / 10000001 / admin@itbss.ac.id"),
+                new OA\Property(property: "password", type: "string", example: "password / admin123")
             ]
         )
     )]
@@ -37,7 +37,7 @@ class AuthController extends Controller
                     properties: [
                         new OA\Property(property: "id", type: "integer", example: 1),
                         new OA\Property(property: "name", type: "string", example: "Kelio Xenelly"),
-                        new OA\Property(property: "email", type: "string", example: "kelio@gmail.com"),
+                        new OA\Property(property: "email", type: "string", example: "kelio.xenelly@itbss.ac.id"),
                         new OA\Property(property: "role", type: "string", example: "mahasiswa"),
                         new OA\Property(property: "is_active", type: "boolean", example: true)
                     ],
@@ -92,6 +92,21 @@ class AuthController extends Controller
         ]);
     }
 
+    #[OA\Post(
+        path: "/api/logout",
+        summary: "Logout user",
+        tags: ["Auth"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Logout berhasil",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Logout berhasil")
+            ]
+        )
+    )]
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -101,11 +116,65 @@ class AuthController extends Controller
         ]);
     }
 
+
+    #[OA\Get(
+        path: "/api/me",
+        summary: "Get current authenticated user",
+        tags: ["Auth"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "User data",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "id", type: "integer", example: 1),
+                new OA\Property(property: "name", type: "string", example: "Kelio Xenelly"),
+                new OA\Property(property: "email", type: "string", example: "kelio@gmail.com"),
+                new OA\Property(property: "role", type: "string", example: "mahasiswa"),
+                new OA\Property(property: "is_active", type: "boolean", example: true)
+            ]
+        )
+    )]
     public function me(Request $request)
     {
         return response()->json($request->user());
     }
 
+    #[OA\Post(
+        path: "/api/change-password",
+        summary: "Change password",
+        tags: ["Auth"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["oldPassword", "newPassword"],
+            properties: [
+                new OA\Property(property: "oldPassword", type: "string", example: "old123"),
+                new OA\Property(property: "newPassword", type: "string", example: "new123456")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Password berhasil diubah",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Password berhasil diubah")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Password lama salah",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Password lama salah")
+            ]
+        )
+    )]
     public function changePassword(Request $request)
     {
         $request->validate([
@@ -128,6 +197,181 @@ class AuthController extends Controller
         ]);
     }
 
+    #[OA\Post(
+        path: "/api/register",
+        summary: "Register user (Admin only) (nim required for mahasiswa, nidn required for dosen)",
+        tags: ["Auth"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["name", "email", "role"],
+            properties: [
+                new OA\Property(property: "name", type: "string"),
+                new OA\Property(property: "email", type: "string"),
+                new OA\Property(property: "role", type: "string"),
+                new OA\Property(property: "nim", type: "string", nullable: true),
+                new OA\Property(property: "nidn", type: "string", nullable: true),
+                new OA\Property(property: "prodi_id", type: "integer", nullable: true),
+                new OA\Property(property: "angkatan", type: "string", nullable: true)
+            ],
+            examples: [
+                new OA\Examples(
+                    example: "Mahasiswa",
+                    summary: "Input Mahasiswa",
+                    value: [
+                        "name" => "Anggario",
+                        "email" => "anggario@itbss.ac.id",
+                        "role" => "mahasiswa",
+                        "nim" => "22110001",
+                        "prodi_id" => 1,
+                        "angkatan" => "2022"
+                    ]
+                ),
+                new OA\Examples(
+                    example: "Dosen",
+                    summary: "Input Dosen",
+                    value: [
+                        "name" => "Kevin",
+                        "email" => "kevin@itbss.ac.id",
+                        "role" => "dosen",
+                        "nidn" => "0087654321",
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: "Pendaftaran berhasil",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string"),
+                new OA\Property(
+                    property: "data",
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "id", type: "integer"),
+                        new OA\Property(property: "name", type: "string"),
+                        new OA\Property(property: "email", type: "string"),
+                        new OA\Property(property: "role", type: "string"),
+                        new OA\Property(property: "is_active", type: "boolean"),
+                        new OA\Property(property: "created_at", type: "string"),
+                        new OA\Property(property: "updated_at", type: "string"),
+                        new OA\Property(
+                            property: "mahasiswa",
+                            type: "object",
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: "id", type: "integer"),
+                                new OA\Property(property: "user_id", type: "integer"),
+                                new OA\Property(property: "nim", type: "string"),
+                                new OA\Property(property: "prodi_id", type: "integer"),
+                                new OA\Property(property: "angkatan", type: "string"),
+                                new OA\Property(property: "created_at", type: "string"),
+                                new OA\Property(property: "updated_at", type: "string"),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: "dosen",
+                            type: "object",
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: "id", type: "integer"),
+                                new OA\Property(property: "user_id", type: "integer"),
+                                new OA\Property(property: "nidn", type: "string"),
+                                new OA\Property(property: "created_at", type: "string"),
+                                new OA\Property(property: "updated_at", type: "string"),
+                            ]
+                        )
+                    ]
+                )
+            ],
+            examples: [
+                new OA\Examples(
+                    example: "Mahasiswa",
+                    summary: "Respon Mahasiswa",
+                    value: [
+                        "message" => "Pengguna berhasil didaftarkan",
+                        "data" => [
+                            "id" => 10,
+                            "name" => "Anggario",
+                            "email" => "anggrio@itbss.ac.id",
+                            "role" => "mahasiswa",
+                            "is_active" => true,
+                            "created_at" => "2026-04-07T09:03:06.000000Z",
+                            "updated_at" => "2026-04-07T09:03:06.000000Z",
+                            "mahasiswa" => [
+                                "id" => 1,
+                                "user_id" => 1,
+                                "nim" => "22110001",
+                                "prodi_id" => 1,
+                                "angkatan" => "2022",
+                                "created_at" => "2026-04-07T09:03:06.000000Z",
+                                "updated_at" => "2026-04-07T09:03:06.000000Z"
+                            ],
+                            "dosen" => null
+                        ]
+                    ]
+                ),
+                new OA\Examples(
+                    example: "Dosen",
+                    summary: "Respon Dosen",
+                    value: [
+                        "message" => "Pengguna berhasil didaftarkan",
+                        "data" => [
+                            "id" => 11,
+                            "name" => "Kevin",
+                            "email" => "kevin@itbss.ac.id",
+                            "role" => "dosen",
+                            "is_active" => true,
+                            "created_at" => "2026-04-07T09:03:06.000000Z",
+                            "updated_at" => "2026-04-07T09:03:06.000000Z",
+                            "mahasiswa" => null,
+                            "dosen" => [
+                                "id" => 2,
+                                "user_id" => 2,
+                                "nidn" => "0087654321",
+                                "created_at" => "2026-04-07T09:03:06.000000Z",
+                                "updated_at" => "2026-04-07T09:03:06.000000Z"
+                            ]
+                        ]
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 422,
+        description: "Validasi gagal (Email, NIM, atau NIDN sudah terdaftar)",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "The email has already been taken."),
+                new OA\Property(
+                    property: "errors",
+                    type: "object",
+                    properties: [
+                        new OA\Property(
+                            property: "email",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "The email has already been taken.")
+                        ),
+                        new OA\Property(
+                            property: "nim",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "The nim has already been taken.")
+                        ),
+                        new OA\Property(
+                            property: "nidn",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "The nidn has already been taken.")
+                        )
+                    ]
+                )
+            ]
+        )
+    )]
     public function register(Request $request)
     {
         $request->validate([
@@ -168,6 +412,104 @@ class AuthController extends Controller
         ], 201);
     }
 
+    #[OA\Get(
+        path: "/api/users",
+        summary: "Get all users",
+        tags: ["User"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Daftar pengguna",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Daftar pengguna berhasil diambil"),
+                new OA\Property(
+                    property: "data",
+                    type: "array",
+                    items: new OA\Items(
+                        type: "object",
+                        properties: [
+                            new OA\Property(property: "id", type: "integer"),
+                            new OA\Property(property: "name", type: "string"),
+                            new OA\Property(property: "email", type: "string"),
+                            new OA\Property(property: "email_verified_at", type: "string", nullable: true),
+                            new OA\Property(property: "role", type: "string"),
+                            new OA\Property(property: "is_active", type: "integer"),
+                            new OA\Property(property: "created_at", type: "string"),
+                            new OA\Property(property: "updated_at", type: "string"),
+                            new OA\Property(
+                                property: "mahasiswa",
+                                type: "object",
+                                nullable: true,
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer"),
+                                    new OA\Property(property: "user_id", type: "integer"),
+                                    new OA\Property(property: "nim", type: "string"),
+                                    new OA\Property(property: "prodi_id", type: "integer"),
+                                    new OA\Property(property: "angkatan", type: "string"),
+                                    new OA\Property(property: "created_at", type: "string"),
+                                    new OA\Property(property: "updated_at", type: "string")
+                                ]
+                            ),
+                            new OA\Property(
+                                property: "dosen",
+                                type: "object",
+                                nullable: true,
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer"),
+                                    new OA\Property(property: "user_id", type: "integer"),
+                                    new OA\Property(property: "nidn", type: "string"),
+                                    new OA\Property(property: "created_at", type: "string"),
+                                    new OA\Property(property: "updated_at", type: "string")
+                                ]
+                            )
+                        ]
+                    ),
+                    example: [
+                        [
+                            "id" => 10,
+                            "name" => "Kelio Xenelly",
+                            "email" => "kelio.xenelly@itbss.ac.id",
+                            "email_verified_at" => null,
+                            "role" => "mahasiswa",
+                            "is_active" => 1,
+                            "created_at" => "2026-04-07T09:03:06.000000Z",
+                            "updated_at" => "2026-04-07T09:03:06.000000Z",
+                            "mahasiswa" => [
+                                "id" => 1,
+                                "user_id" => 10,
+                                "nim" => "23110001",
+                                "prodi_id" => 1,
+                                "angkatan" => "2023",
+                                "created_at" => "2026-04-07T09:03:06.000000Z",
+                                "updated_at" => "2026-04-07T09:03:06.000000Z"
+                            ],
+                            "dosen" => null
+                        ],
+                        [
+                            "id" => 11,
+                            "name" => "Eric",
+                            "email" => "eric@itbss.ac.id",
+                            "email_verified_at" => null,
+                            "role" => "dosen",
+                            "is_active" => 1,
+                            "created_at" => "2026-04-07T09:03:06.000000Z",
+                            "updated_at" => "2026-04-07T09:03:06.000000Z",
+                            "mahasiswa" => null,
+                            "dosen" => [
+                                "id" => 2,
+                                "user_id" => 11,
+                                "nidn" => "0012345678",
+                                "created_at" => "2026-04-07T09:03:06.000000Z",
+                                "updated_at" => "2026-04-07T09:03:06.000000Z"
+                            ]
+                        ]
+                    ]
+                )
+            ]
+        )
+    )]
     public function users()
     {
         $users = User::with(['mahasiswa', 'dosen'])->get();
@@ -177,6 +519,198 @@ class AuthController extends Controller
         ], 200);
     }
 
+    #[OA\Put(
+        path: "/api/users/{user_id}",
+        summary: "Update user",
+        tags: ["User"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(
+        name: "user_id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "integer")
+    )]
+    #[OA\RequestBody(
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "name", type: "string"),
+                new OA\Property(property: "email", type: "string"),
+                new OA\Property(property: "is_active", type: "boolean"),
+                new OA\Property(property: "role", type: "string"),
+                new OA\Property(property: "nim", type: "string", nullable: true),
+                new OA\Property(property: "nidn", type: "string", nullable: true),
+                new OA\Property(property: "prodi_id", type: "integer", nullable: true),
+                new OA\Property(property: "angkatan", type: "string", nullable: true),
+                new OA\Property(property: "password", type: "string", nullable: true)
+            ],
+            examples: [
+                new OA\Examples(
+                    example: "Mahasiswa",
+                    summary: "Update form Mahasiswa",
+                    value: [
+                        "name" => "Anggario",
+                        "email" => "anggario@itbss.ac.id",
+                        "role" => "mahasiswa",
+                        "nim" => "22110001",
+                        "prodi_id" => 1,
+                        "angkatan" => "2022",
+                        "password" => null
+                    ]
+                ),
+                new OA\Examples(
+                    example: "Dosen",
+                    summary: "Update form Dosen",
+                    value: [
+                        "name" => "Kevin",
+                        "email" => "kevin@itbss.ac.id",
+                        "role" => "dosen",
+                        "nidn" => "0087654321",
+                        "password" => null
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Pengguna berhasil diperbarui",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string"),
+                new OA\Property(
+                    property: "data",
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "id", type: "integer"),
+                        new OA\Property(property: "name", type: "string"),
+                        new OA\Property(property: "email", type: "string"),
+                        new OA\Property(property: "role", type: "string"),
+                        new OA\Property(property: "is_active", type: "boolean"),
+                        new OA\Property(property: "created_at", type: "string"),
+                        new OA\Property(property: "updated_at", type: "string"),
+                        new OA\Property(
+                            property: "mahasiswa",
+                            type: "object",
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: "id", type: "integer"),
+                                new OA\Property(property: "user_id", type: "integer"),
+                                new OA\Property(property: "nim", type: "string"),
+                                new OA\Property(property: "prodi_id", type: "integer"),
+                                new OA\Property(property: "angkatan", type: "string"),
+                                new OA\Property(property: "created_at", type: "string"),
+                                new OA\Property(property: "updated_at", type: "string"),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: "dosen",
+                            type: "object",
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: "id", type: "integer"),
+                                new OA\Property(property: "user_id", type: "integer"),
+                                new OA\Property(property: "nidn", type: "string"),
+                                new OA\Property(property: "created_at", type: "string"),
+                                new OA\Property(property: "updated_at", type: "string"),
+                            ]
+                        )
+                    ]
+                )
+            ],
+            examples: [
+                new OA\Examples(
+                    example: "Mahasiswa",
+                    summary: "Respon Mahasiswa",
+                    value: [
+                        "message" => "Pengguna berhasil diperbarui",
+                        "data" => [
+                            "id" => 10,
+                            "name" => "Kelio Xenelly",
+                            "email" => "kelio.xenelly@itbss.ac.id",
+                            "role" => "mahasiswa",
+                            "is_active" => true,
+                            "created_at" => "2026-04-07T09:03:06.000000Z",
+                            "updated_at" => "2026-04-07T09:03:06.000000Z",
+                            "mahasiswa" => [
+                                "id" => 1,
+                                "user_id" => 10,
+                                "nim" => "23110001",
+                                "prodi_id" => 1,
+                                "angkatan" => "2023",
+                                "created_at" => "2026-04-07T09:03:06.000000Z",
+                                "updated_at" => "2026-04-07T09:03:06.000000Z"
+                            ],
+                            "dosen" => null
+                        ]
+                    ]
+                ),
+                new OA\Examples(
+                    example: "Dosen",
+                    summary: "Respon Dosen",
+                    value: [
+                        "message" => "Pengguna berhasil diperbarui",
+                        "data" => [
+                            "id" => 11,
+                            "name" => "Eric",
+                            "email" => "eric@itbss.ac.id",
+                            "role" => "dosen",
+                            "is_active" => true,
+                            "created_at" => "2026-04-07T09:03:06.000000Z",
+                            "updated_at" => "2026-04-07T09:03:06.000000Z",
+                            "mahasiswa" => null,
+                            "dosen" => [
+                                "id" => 2,
+                                "user_id" => 11,
+                                "nidn" => "0012345678",
+                                "created_at" => "2026-04-07T09:03:06.000000Z",
+                                "updated_at" => "2026-04-07T09:03:06.000000Z"
+                            ]
+                        ]
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Pengguna gagal diubah karena relasi kelas",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "errors", type: "string", example: "Mahasiswa/Dosen masih memiliki kelas, pengguna ini tidak bisa diubah")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 422,
+        description: "Validasi gagal (Email, NIM, NIDN yang duplikat atau format tidak sesuai)",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "The given data was invalid."),
+                new OA\Property(
+                    property: "errors",
+                    type: "object",
+                    properties: [
+                        new OA\Property(
+                            property: "email",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "The email has already been taken.")
+                        ),
+                        new OA\Property(
+                            property: "nim",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "The nim has already been taken atau required.")
+                        ),
+                        new OA\Property(
+                            property: "nidn",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "The nidn has already been taken.")
+                        )
+                    ]
+                )
+            ]
+        )
+    )]
     public function updateUser(Request $request, $user_id)
     {
         $user = User::findOrFail($user_id);
@@ -246,6 +780,36 @@ class AuthController extends Controller
         ], 200);
     }
 
+    #[OA\Delete(
+        path: "/api/users/{user_id}",
+        summary: "Delete user",
+        tags: ["User"],
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(
+        name: "user_id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "integer")
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "User deleted",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Pengguna berhasil dihapus")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Pengguna gagal dihapus",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "errors", type: "string", example: "Mahasiswa/Dosen masih memiliki kelas, pengguna ini tidak bisa dihapus")
+            ]
+        )
+    )]
     public function deleteUser($user_id)
     {
         $user = User::findOrFail($user_id);
